@@ -152,6 +152,7 @@
       const name=r.data?.username||"A friend";
       $s("voice-status").textContent=name+" is calling you.";
       $s("voice-accept").classList.remove("hidden");
+      $s("voice-decline").classList.remove("hidden");
       $s("voice-accept").textContent="Accept call from @"+name;
       $s("voice-accept").disabled=false;
       $s("voice-accept").dataset.name=name;
@@ -188,7 +189,7 @@
   }
   async function acceptCall(){
     if(!pendingOffer)return;
-    const row=pendingOffer;pendingOffer=null;$s("voice-accept").classList.add("hidden");
+    const row=pendingOffer;pendingOffer=null;$s("voice-accept").classList.add("hidden");$s("voice-decline").classList.add("hidden");
     try{
       await setupPeer(row.sender_id,row.room_id);
       await pc.setRemoteDescription({type:"offer",sdp:row.signal.sdp});await flushCandidates();
@@ -196,6 +197,17 @@
       await insertSignal(row.room_id,row.sender_id,{type:"answer",sdp:pc.localDescription.sdp});
       $s("voice-status").textContent="Connecting audio…";
     }catch(ex){message("Couldn't accept call: "+err(ex),true);await hangup(false);}
+  }
+  async function declineCall(){
+    if(pendingOffer){
+      const row=pendingOffer;
+      insertSignal(row.room_id,row.sender_id,{type:"hangup"}).catch(()=>{});
+      S.db.from("voice_signals").delete().eq("room_id",row.room_id).then(()=>{}).catch(()=>{});
+    }
+    pendingOffer=null;
+    $s("voice-accept").classList.add("hidden");
+    $s("voice-decline").classList.add("hidden");
+    $s("voice-status").textContent="Call declined.";
   }
   async function hangup(send=true){
     const peer=callPeer,room=callRoom;
@@ -206,11 +218,12 @@
     $s("voice-mute").disabled=true;$s("voice-mute").textContent="Mute mic";$s("voice-hangup").disabled=true;
     $s("voice-status").textContent="Not in a call.";
     callPeer=null;callRoom=null;pendingOffer=null;pendingCandidates=[];
-    $s("voice-accept").classList.add("hidden");
+    $s("voice-accept").classList.add("hidden");$s("voice-decline").classList.add("hidden");
     if(room)S.db.from("voice_signals").delete().eq("room_id",room).then(()=>{}).catch(()=>{});
   }
   $s("voice-call").addEventListener("click",startCall);
   $s("voice-accept").addEventListener("click",acceptCall);
+  $s("voice-decline").addEventListener("click",declineCall);
   $s("voice-hangup").addEventListener("click",()=>hangup(true));
   $s("voice-mute").addEventListener("click",()=>{
     if(!localStream)return;
