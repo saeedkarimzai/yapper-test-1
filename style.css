@@ -23,3 +23,7 @@
 #friends-modal{width:min(94vw,520px);max-height:88vh;overflow:auto}
 #friends-modal .muted{font-size:11px}
 @media(max-width:420px){.friend-add-form{flex-direction:column}.friend-add-form input{width:100%}.friend-controls{max-width:110px}.friend-row{gap:7px}}
+
+.chat-head-actions{display:flex;align-items:center;gap:12px}
+.friends-mobile{display:none;border:1px solid #51446f;background:#29243b;color:#d9ceff;border-radius:8px;padding:8px 10px;font-size:11px;font-weight:700;white-space:nowrap}
+@media(max-width:620px){.chat-head{padding:0 10px}.chat-head-actions{gap:8px}.friends-mobile{display:inline-flex;align-items:center}.live{font-size:8px;letter-spacing:.04em}.chat-head h2{font-size:13px}}
