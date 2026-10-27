@@ -37,9 +37,15 @@ async function selectChannel(id){
  // channel object that was already subscribed while a previous channel is being removed.
  const topic="yapper-messages-"+id+"-"+token;
  const channelSub=S.db.channel(topic)
-  .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"channel_id=eq."+id},p=>{
+  .on("postgres_changes",{event:"*",schema:"public",table:"messages",filter:"channel_id=eq."+id},p=>{
    if(S.channel?.id!==id)return;
-   if(!S.messages.some(m=>m.id===p.new.id)){S.messages.push(p.new);if(S.messages.length>150)S.messages.shift();renderMessages()}
+   if(p.eventType==="INSERT"){
+    if(!S.messages.some(m=>m.id===p.new.id)){S.messages.push(p.new);if(S.messages.length>150)S.messages.shift();renderMessages();}
+   }else if(p.eventType==="UPDATE"){
+    const i=S.messages.findIndex(m=>m.id===p.new.id);if(i>=0){S.messages[i]=p.new;renderMessages();}
+   }else if(p.eventType==="DELETE"){
+    S.messages=S.messages.filter(m=>m.id!==p.old.id);renderMessages();
+   }
   })
   .subscribe(status=>{
    if(token!==channelRequestToken)return;
