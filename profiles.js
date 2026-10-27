@@ -151,7 +151,8 @@
       const name = profile?.username || (message.user_id === S.user?.id ? (S.profile?.username || "You") : "Yapper");
       const avatarUrl = profile?.avatar_url;
       const article = document.createElement("article");
-      article.className = "message";\n      article.dataset.messageId = message.id;
+      article.className = "message";
+      article.dataset.messageId = message.id;
       const avatar = document.createElement("div");
       avatar.className = "avatar";
       if (avatarUrl) {
