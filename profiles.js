@@ -31,6 +31,7 @@
       if (S.messages && S.messages.length) await hydrateMessageProfiles();
       if (typeof renderMessages === "function") renderMessages();
     } catch (e) {
+      S.profileBootUser = null;
       toast("Profile loading: " + (e.message || e));
     }
   }
@@ -268,6 +269,7 @@
       if (S.presence) S.db.removeChannel(S.presence);
       S.presence = null;
       S.profile = null;
+      S.profileBootUser = null;
       S.memberProfiles = [];
       S.onlineIds = new Set();
       renderMembers();
