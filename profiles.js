@@ -169,11 +169,55 @@
       author.textContent = name;
       const time = document.createElement("time");
       time.textContent = new Date(message.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+      meta.append(author, time);
+      if (message.edited_at) {
+        const edited = document.createElement("small");
+        edited.className = "edited-label";
+        edited.textContent = "edited";
+        meta.append(edited);
+      }
       const text = document.createElement("div");
       text.className = "message-text";
       text.textContent = message.content;
-      meta.append(author, time);
       body.append(meta, text);
+      if (message.user_id === S.user?.id) {
+        const actions = document.createElement("div");
+        actions.className = "message-actions";
+        const edit = document.createElement("button");
+        edit.type = "button"; edit.textContent = "Edit"; edit.title = "Edit your message";
+        edit.addEventListener("click", async () => {
+          const next = window.prompt("Edit your message:", message.content);
+          if (next === null) return;
+          const content = next.trim();
+          if (!content || content.length > 2000) { if (typeof toast === "function") toast("Messages must be 1–2000 characters."); return; }
+          edit.disabled = true;
+          try {
+            const result = await S.db.from("messages").update({ content, edited_at: new Date().toISOString() }).eq("id", message.id).eq("user_id", S.user.id).select("id").maybeSingle();
+            if (result.error) throw result.error;
+            if (!result.data) throw new Error("Message could not be edited.");
+            const current = S.messages.find(m => m.id === message.id);
+            if (current) { current.content = content; current.edited_at = new Date().toISOString(); }
+            window.renderMessages();
+          } catch (error) { if (typeof toast === "function") toast("Edit failed: " + (error.message || error)); }
+          finally { edit.disabled = false; }
+        });
+        const remove = document.createElement("button");
+        remove.type = "button"; remove.textContent = "Delete"; remove.title = "Delete your message";
+        remove.addEventListener("click", async () => {
+          if (!window.confirm("Delete this message? This cannot be undone.")) return;
+          remove.disabled = true;
+          try {
+            const result = await S.db.from("messages").delete().eq("id", message.id).eq("user_id", S.user.id).select("id").maybeSingle();
+            if (result.error) throw result.error;
+            if (!result.data) throw new Error("Message could not be deleted.");
+            S.messages = S.messages.filter(m => m.id !== message.id);
+            window.renderMessages();
+          } catch (error) { if (typeof toast === "function") toast("Delete failed: " + (error.message || error)); }
+          finally { remove.disabled = false; }
+        });
+        actions.append(edit, remove);
+        body.append(actions);
+      }
       article.append(avatar, body);
       root.append(article);
     });
