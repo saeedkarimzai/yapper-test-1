@@ -33,7 +33,9 @@ async function selectChannel(id){
  if(token!==channelRequestToken||S.channel?.id!==id)return;
  S.messages=data||[];
  renderMessages();
- const topic="yapper-messages-"+id;
+ // Give every subscription attempt a unique topic. Supabase can otherwise return a
+ // channel object that was already subscribed while a previous channel is being removed.
+ const topic="yapper-messages-"+id+"-"+token;
  const channelSub=S.db.channel(topic)
   .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"channel_id=eq."+id},p=>{
    if(S.channel?.id!==id)return;
