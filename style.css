@@ -72,3 +72,27 @@
 .actions{flex-wrap:wrap}.actions button{flex:1 1 auto}.voice-controls #voice-decline{border-color:#75424a;color:#ffb5bd;background:#352128}
 
 .dm-panel{margin-top:12px}.dm-chat-heading{padding:9px 0;border-bottom:1px solid #2d2f3b;font-size:12px;color:#d9ceff}.dm-messages{max-height:230px;min-height:90px}.dm-panel .voice-controls{margin:10px 0}.dm-panel .voice-controls input{flex:1}
+
+
+/* Discord-inspired message tools */
+.search-toggle{border:1px solid #343642;background:#20212a;color:#c9c7d8;border-radius:7px;padding:8px 12px;font-size:11px;font-weight:700;white-space:nowrap}
+.search-toggle:hover{background:#2a2b37;color:#fff}
+.message-search{display:flex;align-items:center;gap:8px;padding:10px 16px;background:#171820;border-bottom:1px solid var(--line)}
+.message-search input{flex:1;min-width:0;background:#101116;border:1px solid #343642;color:var(--text);border-radius:7px;padding:9px 11px}
+.message-search span{font-size:10px;color:var(--muted);white-space:nowrap}
+.message-search button{border:1px solid #343642;background:#252630;color:#ddd;border-radius:7px;padding:8px 10px;font-size:11px}
+.search-hidden{display:none!important}
+.composer #emoji-toggle{border:0;background:transparent;color:#b5a3ff;font-size:23px;padding:0 5px;min-width:35px}
+.composer #emoji-toggle:disabled{opacity:.4;cursor:not-allowed}
+.emoji-tray{display:flex;flex-wrap:wrap;gap:4px;padding:10px 14px;background:#20212b;border:1px solid #373947;border-radius:12px;margin:0 16px 8px;max-width:390px}
+.emoji-tray button,.reaction-picker button{background:transparent;border:0;border-radius:6px;padding:6px;font-size:20px}
+.emoji-tray button:hover,.reaction-picker button:hover{background:#3a354d}
+.message{position:relative}
+.message:hover{background:#ffffff04}
+.reaction-bar{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.reaction-chip,.reaction-add{border:1px solid #383a49;background:#20212b;color:#d5d5e2;border-radius:8px;padding:3px 8px;font-size:12px;min-height:27px}
+.reaction-chip:hover,.reaction-add:hover{border-color:#8b74d9;background:#2b2740}
+.reaction-chip.mine{border-color:#9277ff;background:#382f59;color:#fff}
+.reaction-add{font-size:10px;color:#b8a8ff}
+.reaction-picker{display:flex;flex-wrap:wrap;gap:2px;position:absolute;z-index:20;bottom:36px;left:8px;max-width:260px;padding:7px;background:#252630;border:1px solid #444653;border-radius:10px;box-shadow:0 10px 35px #0009}
+@media(max-width:700px){.chat-head-actions{gap:6px}.search-toggle{padding:7px 8px}.message-search{padding:8px;gap:5px}.message-search span{display:none}.emoji-tray{margin:0 8px 8px}.reaction-picker{max-width:230px}}
