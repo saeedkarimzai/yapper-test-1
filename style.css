@@ -2,3 +2,24 @@
 .live.offline{color:#ffbd75}
 
 .own-profile{display:flex;align-items:center;gap:8px;flex:1;min-width:0;text-align:left;border:0;background:none;color:inherit;padding:0}.own-profile .user{min-width:0}.avatar img,.member-avatar img,.profile-preview img{width:100%;height:100%;object-fit:cover;border-radius:inherit}.avatar.has-image{overflow:hidden;padding:0}.member-list{display:flex;flex-direction:column;gap:10px;margin:12px 0 24px}.member-row{display:flex;align-items:center;gap:9px;min-width:0}.member-avatar{width:30px;height:30px;flex-shrink:0;border-radius:10px;background:#373047;color:#d8ceff;display:grid;place-items:center;font-weight:700;overflow:hidden}.member-name{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}.member-name b{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.member-name small{font-size:9px;letter-spacing:0}.status-online{color:var(--green)}.status-offline{color:#888b9a}.presence-dot{width:8px;height:8px;border-radius:50%;background:#737687;flex-shrink:0}.presence-dot.online{background:var(--green);box-shadow:0 0 8px #4ee0a055}.profile-preview{width:76px;height:76px;border-radius:22px;margin:12px auto;background:linear-gradient(135deg,#9b7bff,#5a47a5);display:grid;place-items:center;font-size:27px;font-weight:700;overflow:hidden}#profile-file{width:100%;color:#c9cbda;padding:9px;background:#101116;border:1px solid #363846;border-radius:9px}#profile-modal{max-height:90vh;overflow:auto}@media(max-width:1000px){.member-list{display:none}}
+.actions #open-friends{flex:1}
+.friend-add-form{display:flex;gap:8px;align-items:stretch;margin:14px 0}
+.friend-add-form input{flex:1;min-width:0;width:0;padding:11px;background:#101116;border:1px solid #363846;border-radius:9px;color:white}
+.friend-add-form .primary{padding:10px 12px;font-size:11px;white-space:nowrap}
+.friend-section{margin-top:18px}
+.friend-section h3{display:flex;justify-content:space-between;align-items:center;font:600 13px 'Space Grotesk';margin:0 0 10px}
+.friend-section h3 span{font:700 10px 'DM Sans';color:#b6a5ff;background:#302843;border-radius:10px;padding:3px 7px}
+.friend-list{display:flex;flex-direction:column;gap:9px;max-height:190px;overflow:auto}
+.friend-row{display:flex;align-items:center;gap:9px;padding:9px;background:#20212b;border:1px solid #30323e;border-radius:10px;min-width:0}
+.friend-avatar{width:34px;height:34px;flex-shrink:0;border-radius:11px;background:linear-gradient(135deg,#9b7bff,#5a47a5);display:grid;place-items:center;font-weight:700;overflow:hidden}
+.friend-avatar img{width:100%;height:100%;object-fit:cover}
+.friend-info{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.friend-info b{font-size:11px;overflow-wrap:anywhere}
+.friend-info small{font-size:9px;letter-spacing:0;color:#9b9eaf;font-weight:500}
+.friend-controls{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.friend-action{border:1px solid #414350;background:#2a2c37;color:#d8d9e5;border-radius:7px;padding:6px 8px;font-size:10px;font-weight:700}
+.friend-action.accept{background:#1b3a30;border-color:#2f6953;color:#75f0b7}
+.friend-action.remove{color:#ffb5bd}
+#friends-modal{width:min(94vw,520px);max-height:88vh;overflow:auto}
+#friends-modal .muted{font-size:11px}
+@media(max-width:420px){.friend-add-form{flex-direction:column}.friend-add-form input{width:100%}.friend-controls{max-width:110px}.friend-row{gap:7px}}
