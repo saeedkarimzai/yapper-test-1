@@ -5,6 +5,7 @@
   S.onlineIds = new Set();
   S.memberProfiles = [];
   S.profileLoading = new Set();
+  S.profileLookedUp = S.profileLookedUp || new Set();
   S.profileBootUser = null;
 
   async function ensureProfile(user) {
@@ -121,9 +122,9 @@
 
   async function hydrateMessageProfiles() {
     if (!S.messages) return;
-    const ids = [...new Set(S.messages.map(m => m.user_id).filter(id => id && !S.profiles[id] && !S.profileLoading.has(id)))];
+    const ids = [...new Set(S.messages.map(m => m.user_id).filter(id => id && !S.profiles[id] && !S.profileLoading.has(id) && !S.profileLookedUp.has(id)))];
     if (!ids.length) return;
-    ids.forEach(id => S.profileLoading.add(id));
+    ids.forEach(id => { S.profileLoading.add(id); S.profileLookedUp.add(id); });
     try {
       const result = await S.db.from("profiles").select("id,username,avatar_url").in("id", ids);
       if (!result.error) { (result.data || []).forEach(p => { S.profiles[p.id] = p; }); if ((result.data || []).length) queueMicrotask(() => window.renderMessages()); }
