@@ -1,6 +1,6 @@
 // Add your Supabase Project URL and publishable (or legacy anon) key here. Never use a service_role/secret key.
-const SUPABASE_URL = "PASTE_YOUR_SUPABASE_PROJECT_URL_HERE";
-const SUPABASE_KEY = "PASTE_YOUR_SUPABASE_PUBLISHABLE_KEY_HERE";
+const SUPABASE_URL = "https://grtvubvopumjnflhlzrz.supabase.co/rest/v1/";
+const SUPABASE_KEY = "sb_publishable_86c_reVLgXmgR2xtG96gxw_jN3javI2";
 const $=id=>document.getElementById(id);const S={db:null,user:null,servers:[],server:null,channels:[],channel:null,messages:[],sub:null,mode:"signin",dialogMode:null};
 function toast(s){let e=$("toast");e.textContent=s;e.classList.add("show");clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>e.classList.remove("show"),4200)}
 function err(e){return e?.message||String(e)}function initial(s){return (s||"Y").trim().charAt(0).toUpperCase()||"Y"}function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
