@@ -70,3 +70,5 @@
 @media(max-width:620px){#open-social-mobile{padding:8px 9px}.chat-head-actions{flex-wrap:wrap;justify-content:flex-end}}
 
 .actions{flex-wrap:wrap}.actions button{flex:1 1 auto}.voice-controls #voice-decline{border-color:#75424a;color:#ffb5bd;background:#352128}
+
+.dm-panel{margin-top:12px}.dm-chat-heading{padding:9px 0;border-bottom:1px solid #2d2f3b;font-size:12px;color:#d9ceff}.dm-messages{max-height:230px;min-height:90px}.dm-panel .voice-controls{margin:10px 0}.dm-panel .voice-controls input{flex:1}
