@@ -218,7 +218,14 @@
     tracks.forEach(t=>t.enabled=muted);
     $s("voice-mute").textContent=muted?"Mute mic":"Unmute mic";
   });
-  function watchGroups(userId){\n    if(membershipSub){S.db.removeChannel(membershipSub);membershipSub=null;}\n    if(!userId)return;\n    membershipSub=S.db.channel("yapper-group-membership-"+userId)\n      .on("postgres_changes",{event:"*",schema:"public",table:"group_chat_members",filter:"user_id=eq."+userId},()=>loadGroups().catch(ex=>message(err(ex),true)))\n      .subscribe();\n  }\n  function watchSignals(userId){
+  function watchGroups(userId){
+    if(membershipSub){S.db.removeChannel(membershipSub);membershipSub=null;}
+    if(!userId)return;
+    membershipSub=S.db.channel("yapper-group-membership-"+userId)
+      .on("postgres_changes",{event:"*",schema:"public",table:"group_chat_members",filter:"user_id=eq."+userId},()=>loadGroups().catch(ex=>message(err(ex),true)))
+      .subscribe();
+  }
+  function watchSignals(userId){
     if(signalSub){S.db.removeChannel(signalSub);signalSub=null;}
     if(!userId)return;
     signalSub=S.db.channel("yapper-voice-signals-"+userId)
