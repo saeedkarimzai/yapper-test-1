@@ -96,3 +96,9 @@
 .reaction-add{font-size:10px;color:#b8a8ff}
 .reaction-picker{display:flex;flex-wrap:wrap;gap:2px;position:absolute;z-index:20;bottom:36px;left:8px;max-width:260px;padding:7px;background:#252630;border:1px solid #444653;border-radius:10px;box-shadow:0 10px 35px #0009}
 @media(max-width:700px){.chat-head-actions{gap:6px}.search-toggle{padding:7px 8px}.message-search{padding:8px;gap:5px}.message-search span{display:none}.emoji-tray{margin:0 8px 8px}.reaction-picker{max-width:230px}}
+
+.message-actions{display:flex;gap:5px;justify-content:flex-end;opacity:.35;margin-top:6px;transition:opacity .15s}
+.message:hover .message-actions,.message:focus-within .message-actions{opacity:1}
+.message-actions button{background:#252630;border:1px solid #393b49;color:#bfc0ce;border-radius:6px;padding:4px 8px;font-size:10px}
+.message-actions button:hover{background:#373147;border-color:#8067d3;color:white}
+.edited-label{font-size:9px;color:#85889a}
