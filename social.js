@@ -4,7 +4,7 @@
   const $s = id => document.getElementById(id);
   let activeGroup = null, groupSub = null, signalSub = null, currentUserId = null;
   let pc = null, localStream = null, callPeer = null, callRoom = null, pendingOffer = null;
-  let pendingCandidates = [];
+  let pendingCandidates = [], orphanCandidates = [];
   const rtcConfig = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun.cloudflare.com:3478" }] };
 
   function message(text, bad=false) {
@@ -130,7 +130,7 @@
     if(error)throw error;
   }
   async function setupPeer(peerId,roomId){
-    pc=new RTCPeerConnection(rtcConfig);callPeer=peerId;callRoom=roomId;pendingCandidates=[];
+    pc=new RTCPeerConnection(rtcConfig);callPeer=peerId;callRoom=roomId;pendingCandidates=orphanCandidates.filter(x=>x.room_id===roomId&&x.sender_id===peerId).map(x=>x.signal.candidate);orphanCandidates=orphanCandidates.filter(x=>x.room_id!==roomId||x.sender_id!==peerId);
     pc.onicecandidate=e=>{if(e.candidate&&callRoom&&callPeer)insertSignal(callRoom,callPeer,{type:"ice",candidate:e.candidate.toJSON()}).catch(ex=>message("Voice connection: "+err(ex),true));};
     pc.ontrack=e=>{const audio=$s("remote-audio");audio.srcObject=e.streams[0];audio.play().catch(()=>{});$s("voice-status").textContent="Connected — voice is live 🎙️";};
     pc.onconnectionstatechange=()=>{if(pc && ["failed","disconnected","closed"].includes(pc.connectionState)&&pc.connectionState!=="closed")$s("voice-status").textContent="Connection lost. Try calling again.";};
@@ -218,7 +218,7 @@
     tracks.forEach(t=>t.enabled=muted);
     $s("voice-mute").textContent=muted?"Mute mic":"Unmute mic";
   });
-  function watchSignals(userId){
+  function watchGroups(userId){\n    if(groupSub){S.db.removeChannel(groupSub);groupSub=null;}\n    if(!userId)return;\n    groupSub=S.db.channel("yapper-group-membership-"+userId)\n      .on("postgres_changes",{event:"*",schema:"public",table:"group_chat_members",filter:"user_id=eq."+userId},()=>loadGroups().catch(ex=>message(err(ex),true)))\n      .subscribe();\n  }\n  function watchSignals(userId){
     if(signalSub){S.db.removeChannel(signalSub);signalSub=null;}
     if(!userId)return;
     signalSub=S.db.channel("yapper-voice-signals-"+userId)
@@ -227,10 +227,10 @@
       }).subscribe();
   }
   S.db.auth.onAuthStateChange((event,session)=>{
-    currentUserId=session?.user?.id||null;watchSignals(currentUserId);
+    currentUserId=session?.user?.id||null;watchSignals(currentUserId);watchGroups(currentUserId);
     if(event==="SIGNED_OUT"){hangup(false);activeGroup=null;clearGroupChat();$s("group-list").replaceChildren();}
     else if(currentUserId)queueMicrotask(()=>loadGroups().catch(ex=>message(err(ex),true)));
   });
-  S.db.auth.getSession().then(({data})=>{currentUserId=data?.session?.user?.id||null;watchSignals(currentUserId);if(currentUserId)loadGroups().catch(ex=>message(err(ex),true));});
+  S.db.auth.getSession().then(({data})=>{currentUserId=data?.session?.user?.id||null;watchSignals(currentUserId);watchGroups(currentUserId);if(currentUserId)loadGroups().catch(ex=>message(err(ex),true));});
   window.addEventListener("beforeunload",()=>{if(localStream)localStream.getTracks().forEach(t=>t.stop());if(pc)pc.close();});
 })();
