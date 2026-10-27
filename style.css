@@ -68,3 +68,5 @@
 #remote-audio{width:100%;height:30px}
 @media(max-width:700px){.social-layout{grid-template-columns:1fr}.group-chat-panel{min-height:300px}.group-list{max-height:120px}#social-modal{padding:18px}.voice-controls{flex-wrap:wrap}.voice-controls input{min-width:150px}}
 @media(max-width:620px){#open-social-mobile{padding:8px 9px}.chat-head-actions{flex-wrap:wrap;justify-content:flex-end}}
+
+.actions{flex-wrap:wrap}.actions button{flex:1 1 auto}.voice-controls #voice-decline{border-color:#75424a;color:#ffb5bd;background:#352128}
