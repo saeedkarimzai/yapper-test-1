@@ -4,6 +4,9 @@
   const $f = id => document.getElementById(id);
   let currentUserId = null;
   let busy = false;
+  let friendshipChannel = null;
+  let refreshTimer = null;
+  let loadSequence = 0;
 
   function note(message, error = false) {
     const el = $f("friend-feedback");
@@ -65,7 +68,8 @@
     el.append(p);
   }
   async function loadFriends() {
-    if (!currentUserId || !S.user) {
+    const sequence = ++loadSequence;
+    if (!currentUserId) {
       setLoading($f("friend-requests"), "Sign in to see requests.");
       setLoading($f("friends-list"), "Sign in to see friends.");
       return;
@@ -77,8 +81,10 @@
       .or("requester_id.eq." + currentUserId + ",addressee_id.eq." + currentUserId)
       .order("created_at", { ascending: false });
     if (error) throw error;
+    if (sequence !== loadSequence || currentUserId === null) return;
     const records = rows || [];
     const profiles = await getProfiles(records.map(r => r.requester_id === currentUserId ? r.addressee_id : r.requester_id));
+    if (sequence !== loadSequence || currentUserId === null) return;
     const incoming = records.filter(r => r.status === "pending" && r.addressee_id === currentUserId);
     const outgoing = records.filter(r => r.status === "pending" && r.requester_id === currentUserId);
     const accepted = records.filter(r => r.status === "accepted");
@@ -173,18 +179,34 @@
     } catch (e) { note(e.message || String(e), true); }
     finally { busy = false; $f("friend-add-submit").disabled = false; }
   }
-  $f("open-friends").addEventListener("click", async () => {
+  async function openFriends() {
     $f("friends-modal").showModal();
     note("");
     try { await loadFriends(); } catch (e) { note("Couldn't load friends: " + (e.message || e), true); }
-  });
+  }
+  $f("open-friends").addEventListener("click", openFriends);
+  const mobileFriendsButton = $f("open-friends-mobile");
+  if (mobileFriendsButton) mobileFriendsButton.addEventListener("click", openFriends);
   $f("friends-close").addEventListener("click", () => $f("friends-modal").close());
   $f("friends-refresh").addEventListener("click", async () => {
     try { note(""); await loadFriends(); } catch (e) { note(e.message || String(e), true); }
   });
   $f("friend-add-form").addEventListener("submit", sendRequest);
+  function watchFriendships(userId) {
+    if (friendshipChannel) { S.db.removeChannel(friendshipChannel); friendshipChannel = null; }
+    if (!userId) return;
+    const refresh = () => {
+      clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => loadFriends().catch(e => note(e.message || String(e), true)), 180);
+    };
+    friendshipChannel = S.db.channel("yapper-friendships-" + userId)
+      .on("postgres_changes", { event: "*", schema: "public", table: "friendships", filter: "requester_id=eq." + userId }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "friendships", filter: "addressee_id=eq." + userId }, refresh)
+      .subscribe();
+  }
   S.db.auth.onAuthStateChange((event, session) => {
     currentUserId = session?.user?.id || null;
+    watchFriendships(currentUserId);
     if (event === "SIGNED_OUT") {
       setLoading($f("friend-requests"), "Sign in to see requests.");
       setLoading($f("friends-list"), "Sign in to see friends.");
@@ -194,6 +216,7 @@
   });
   S.db.auth.getSession().then(({ data }) => {
     currentUserId = data?.session?.user?.id || null;
+    watchFriendships(currentUserId);
     if (currentUserId) loadFriends().catch(e => note(e.message || String(e), true));
   });
 })();
