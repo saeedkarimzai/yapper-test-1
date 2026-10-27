@@ -1,6 +1,6 @@
 // YAPPER profiles, avatars, and online presence.
 (function () {
-  if (!window.S || !window.S.db) return;
+  if (typeof S === "undefined" || !S.db) return;
   S.profiles = S.profiles || {};
   S.onlineIds = new Set();
   S.memberProfiles = [];
@@ -126,7 +126,7 @@
     ids.forEach(id => S.profileLoading.add(id));
     try {
       const result = await S.db.from("profiles").select("id,username,avatar_url").in("id", ids);
-      if (!result.error) (result.data || []).forEach(p => { S.profiles[p.id] = p; });
+      if (!result.error) { (result.data || []).forEach(p => { S.profiles[p.id] = p; }); if ((result.data || []).length) queueMicrotask(() => window.renderMessages()); }
     } finally {
       ids.forEach(id => S.profileLoading.delete(id));
     }
