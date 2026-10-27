@@ -102,3 +102,72 @@
 .message-actions button{background:#252630;border:1px solid #393b49;color:#bfc0ce;border-radius:6px;padding:4px 8px;font-size:10px}
 .message-actions button:hover{background:#373147;border-color:#8067d3;color:white}
 .edited-label{font-size:9px;color:#85889a}
+
+
+/* Discord-inspired layout refresh: flatter panels and tighter hierarchy */
+:root{--bg:#313338;--panel:#2b2d31;--line:#26272b;--text:#f2f3f5;--muted:#b5bac1;--purple:#5865f2;--green:#23a559}
+body{background:#313338;font-family:Arial,Helvetica,sans-serif}
+.app{grid-template-columns:72px 240px minmax(260px,1fr) 240px;background:#313338}
+.rail{background:#1e1f22;gap:8px;padding:12px 0}
+.mark{background:#5865f2;border-radius:16px;padding:0;width:48px;height:48px;display:grid;place-items:center}
+.round,.server-pill{width:48px;height:48px;border-radius:50%;transition:border-radius .12s,background .12s}
+.server-pill{background:#313338;border:0;font-size:15px}
+.server-pill:hover,.server-pill.active{border-radius:16px;background:#5865f2}
+.round{background:#313338;color:#23a559;font-size:24px}
+.round:hover{border-radius:16px;background:#23a559;color:#fff}
+.side{background:#2b2d31;border:0}
+.side header{height:48px;padding:0 16px;border-bottom:1px solid #232428;box-shadow:0 1px 0 #0001}
+.side h2{font:700 15px Arial,sans-serif;max-width:175px}
+.side header small{display:none}
+.tiny,.actions button,.section button,.modal-actions button{border:0;background:#383a40;color:#dbdee1;border-radius:4px}
+.actions{padding:10px 8px;gap:4px;flex-wrap:wrap}
+.actions button{background:transparent;color:#b5bac1;text-align:left;padding:8px;font-size:12px}
+.actions button:hover{background:#35373c;color:#fff}
+.section{padding:18px 8px 6px 16px;color:#949ba4;font-size:11px;letter-spacing:.04em}
+.section button{background:transparent;font-size:18px}
+nav{padding:0 8px}
+.channel{padding:7px 8px;border-radius:4px;color:#949ba4;font-size:14px;margin:1px 0}
+.channel span{font-size:21px;color:#80848e;margin-right:7px}
+.channel.active,.channel:hover{background:#404249;color:#f2f3f5}
+footer{background:#232428;padding:9px 8px;gap:5px}
+.avatar{border-radius:50%;background:#5865f2}
+.own-profile{border-radius:4px;padding:3px}
+.own-profile:hover{background:#35373c}
+.user b{font-size:12px;color:#f2f3f5}
+.user small{font-size:10px;color:#b5bac1}
+.chat{background:#313338}
+.chat-head{height:49px;flex-shrink:0;border-bottom:1px solid #26272b;padding:0 16px;box-shadow:0 1px 0 #0001}
+.chat-head h2{font:700 15px Arial,sans-serif;color:#f2f3f5}
+.chat-head p{display:none}
+.chat-head h2:first-letter{color:#949ba4}
+.chat-head-actions{gap:10px}
+.search-toggle{border:0!important;background:transparent!important;color:#b5bac1!important}
+.live{font-size:10px;color:#23a559}
+.messages{padding:18px 16px;gap:0}
+.message{padding:7px 0;gap:14px;border-radius:0}
+.message:hover{background:#2e3035}
+.message .avatar{width:40px;height:40px;flex:0 0 40px}
+.meta{gap:8px;margin:0 0 4px}
+.meta b{font-size:14px;color:#f2f3f5}
+.meta time{font-size:11px;color:#949ba4}
+.message-text{font-size:14px;color:#dbdee1;line-height:1.45}
+.empty{color:#b5bac1}
+.empty>div{background:#404249;color:#dbdee1;border-radius:50%}
+.empty h2{font:700 20px Arial,sans-serif}
+.composer{margin:0 16px;background:#383a40;border:0;border-radius:8px;padding:5px;gap:6px}
+.composer input{padding:9px 10px;font-size:14px}
+.composer button{border-radius:5px;background:transparent;color:#b5bac1;width:36px}
+.composer button:hover{background:#4a4d55;color:white}
+.note{display:none}
+.right{background:#2b2d31;border:0;border-left:1px solid #26272b;padding:20px 10px}
+.member-heading{font-size:11px;letter-spacing:.04em;font-weight:700;color:#949ba4;padding:0 8px 12px}
+.member-list{display:flex;flex-direction:column;gap:2px;margin:0;max-height:none}
+.member-row{padding:7px 8px;border-radius:4px;gap:10px}
+.member-row:hover{background:#35373c}
+.member-avatar{border-radius:50%;width:32px;height:32px;background:#5865f2}
+.member-name b{font-size:13px;font-weight:500;color:#dbdee1}
+.member-name small{font-size:10px;color:#949ba4}
+.presence-dot{width:9px;height:9px}
+.toast{background:#232428;border:1px solid #111214}
+@media(max-width:1120px){.app{grid-template-columns:72px 220px minmax(250px,1fr)}.right{display:none}}
+@media(max-width:620px){.app{grid-template-columns:56px minmax(0,1fr)}.rail{padding-top:10px}.chat-head{height:49px;padding:0 10px}.messages{padding:12px}.composer{margin:0 10px}.chat-head h2{font-size:14px}}
