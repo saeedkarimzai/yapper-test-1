@@ -191,3 +191,5 @@ footer{background:#232428;padding:9px 8px;gap:5px}
 #dm-gif-toggle{background:#30323a;color:#c7c8d3;border:1px solid #494b57;border-radius:6px;padding:7px 9px;font-weight:700;font-size:11px}
 #dm-gif-toggle:disabled,#gif-toggle:disabled{opacity:.4;cursor:not-allowed}
 @media(max-width:620px){.gif-picker{margin:0 8px 8px}.gif-results{grid-template-columns:repeat(2,minmax(0,1fr))}.gif-result img{height:94px}}
+
+.dm-message-content{font-size:12px;line-height:1.5;white-space:pre-wrap;margin:6px 0 0;color:#e1e1eb;overflow-wrap:anywhere}
