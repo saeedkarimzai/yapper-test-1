@@ -11,9 +11,7 @@ A Discord-inspired browser chat app built with HTML, CSS, JavaScript, and Supaba
 - Profiles, usernames, avatar uploads, and online presence
 - Servers, text channels, and real-time messages
 - Friend requests and accepted-friend lists
-- Group chats with invited friends
 - Private direct messages between accepted friends
-- One-to-one WebRTC voice calls
 - Message search, emoji, and reactions
 
 ## One-time Supabase setup
@@ -35,11 +33,7 @@ In GitHub, open **Settings → Pages**, choose **Deploy from a branch**, select 
 
 ## Invite friends to a server
 
-Create a server, then share its server ID with someone you trust. Joining by server ID is a bearer-invite design: anyone who has the ID can join, so do not post it publicly. A dedicated expiring invite-code flow can replace this later.
-
-## Voice call notes
-
-Voice calls require HTTPS, microphone permission, and both users to be online. The current one-to-one WebRTC implementation uses public STUN servers. Some school, corporate, or mobile networks block peer-to-peer connections and require a TURN relay; voice may not connect on every network.
+Create a server, then click **Invite** beside its name. YAPPER creates a random invite code and copies a link. Friends can open the link after signing in, or paste the code into **Join**. Only server owners can create invites; ordinary users cannot join by guessing a server ID.
 
 ## Troubleshooting
 
@@ -47,7 +41,6 @@ Voice calls require HTTPS, microphone permission, and both users to be online. T
 - **Database table or policy errors:** rerun `COMPLETE-SETUP.sql` in SQL Editor.
 - **Realtime is not updating:** enable the listed tables in the Supabase Realtime publication.
 - **Avatar upload fails:** confirm the `yapper-avatars` bucket and storage policies exist.
-- **Voice does not connect:** verify microphone permission and test on a network that permits WebRTC. A TURN server may be required.
 
 GitHub Pages is public. Never commit passwords, service-role keys, private TURN credentials, or other secrets.
 
@@ -58,3 +51,6 @@ The old `yapper.chat` custom-domain mapping was removed because that domain reso
 
 
 **Important:** GitHub commits do not apply SQL to your live Supabase project. Back up an existing database, then review and run `COMPLETE-SETUP.sql` in Supabase SQL Editor. Keep the `private` schema out of the exposed Data API schemas.
+
+
+Group-chat and voice-call features were removed from the current YAPPER interface. Existing legacy group/voice tables are not dropped by the setup script, but direct client access is revoked; private one-to-one messages remain available between accepted friends.
