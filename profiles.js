@@ -178,7 +178,8 @@
       }
       const text = document.createElement("div");
       text.className = "message-text";
-      text.textContent = message.content;
+      if (window.yapperRenderContent) window.yapperRenderContent(text, message.content, "main");
+      else text.textContent = message.content;
       body.append(meta, text);
       if (message.user_id === S.user?.id) {
         const actions = document.createElement("div");
