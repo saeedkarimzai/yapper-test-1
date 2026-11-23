@@ -3,7 +3,7 @@
   if(typeof S==="undefined"||!S.db)return;
   const $d=id=>document.getElementById(id);
   let userId=null, peerId=null, peerName="", sub=null;
-  function note(text,bad=false){const el=$d("social-feedback");if(el){el.textContent=text;el.classList.toggle("error",bad);}}
+  function note(text,bad=false){const el=$d("dm-feedback");if(el){el.textContent=text;el.classList.toggle("error",bad);}}
   async function render(rows,append=false){
     const root=$d("dm-messages");if(!append)root.replaceChildren();
     const ids=[...new Set(rows.flatMap(m=>[m.sender_id,m.recipient_id]))];
