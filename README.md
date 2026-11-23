@@ -55,3 +55,6 @@ GitHub Pages is public. Never commit passwords, service-role keys, private TURN 
 ## Domain note
 
 The old `yapper.chat` custom-domain mapping was removed because that domain resolves to an unrelated Yapper business. Use the GitHub Pages URL above unless you configure a domain you own with the required DNS records.
+
+
+**Important:** GitHub commits do not apply SQL to your live Supabase project. Back up an existing database, then review and run `COMPLETE-SETUP.sql` in Supabase SQL Editor. Keep the `private` schema out of the exposed Data API schemas.
