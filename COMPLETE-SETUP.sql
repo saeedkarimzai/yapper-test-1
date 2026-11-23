@@ -101,13 +101,29 @@ create table if not exists public.message_reactions (
 create index if not exists server_members_user_idx on public.server_members(user_id);
 create index if not exists channels_server_idx on public.channels(server_id,created_at);
 create index if not exists messages_channel_created_idx on public.messages(channel_id,created_at);
-create index if not exists friendships_requester_idx on public.friendships(requester_id,status);
-create index if not exists friendships_addressee_idx on public.friendships(addressee_id,status);
+create index if not exists friendships_requester_status on public.friendships(requester_id,status);
+create index if not exists friendships_addressee_status on public.friendships(addressee_id,status);
+create unique index if not exists friendships_one_pair on public.friendships(least(requester_id,addressee_id),greatest(requester_id,addressee_id));
 create index if not exists group_members_user_idx on public.group_chat_members(user_id);
 create index if not exists group_messages_created_idx on public.group_chat_messages(group_id,created_at);
 create index if not exists dm_pair_created_idx on public.direct_messages(sender_id,recipient_id,created_at);
 create index if not exists voice_signals_recipient_idx on public.voice_signals(recipient_id,created_at);
 create index if not exists reactions_message_idx on public.message_reactions(message_id);
+create index if not exists group_chat_messages_user_id_idx on public.group_chat_messages(user_id);
+create index if not exists group_chats_owner_id_idx on public.group_chats(owner_id);
+create index if not exists group_conversations_owner_id_idx on public.group_conversations(owner_id);
+create index if not exists group_members_user_id_idx on public.group_members(user_id);
+create index if not exists group_messages_user_id_idx on public.group_messages(user_id);
+create index if not exists message_reactions_user_id_idx on public.message_reactions(user_id);
+create index if not exists messages_user_id_idx on public.messages(user_id);
+create index if not exists servers_owner_id_idx on public.servers(owner_id);
+create index if not exists voice_signals_sender_id_idx on public.voice_signals(sender_id);
+
+-- Remove redundant indexes inherited from the prototype schema.
+drop index if exists public.friendships_requester_idx;
+drop index if exists public.friendships_addressee_idx;
+drop index if exists public.friendships_pair_unique;
+drop index if exists public.message_reactions_message_idx;
 
 -- Private security-definer helpers avoid recursive RLS checks without exposing RPCs.
 create schema if not exists private;
@@ -207,7 +223,7 @@ begin
       and tablename = any(array[
         'profiles','servers','server_members','channels','messages','friendships',
         'group_chats','group_chat_members','group_chat_messages','direct_messages',
-        'voice_signals','message_reactions'
+        'voice_signals','message_reactions','group_conversations','group_members','group_messages'
       ])
   loop
     execute format('drop policy if exists %I on %I.%I',p.policyname,p.schemaname,p.tablename);
