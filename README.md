@@ -12,7 +12,7 @@ A Discord-inspired browser chat app built with HTML, CSS, JavaScript, and Supaba
 - Servers, text channels, and real-time messages
 - Friend requests and accepted-friend lists
 - Private direct messages between accepted friends
-- Message search, emoji, and reactions
+- Message search, emoji, reactions, and searchable GIPHY GIFs in server chat and private DMs
 
 ## One-time Supabase setup
 
@@ -54,3 +54,8 @@ The old `yapper.chat` custom-domain mapping was removed because that domain reso
 
 
 Group-chat and voice-call features were removed from the current YAPPER interface. Existing legacy group/voice tables are not dropped by the setup script, but direct client access is revoked; private one-to-one messages remain available between accepted friends.
+
+
+## GIF search
+
+The GIF picker uses the GIPHY API. Open either GIF button, choose **Set API key**, and paste an API key created at https://developers.giphy.com/dashboard/. The key is stored only in that browser's local storage. The app requests PG-13-rated GIFs and stores the selected GIF URL inside the existing message content, so no database migration is needed. Each user who wants to search GIFs on another browser/device must add their own GIPHY key there; anyone can still view GIFs sent by other users.
