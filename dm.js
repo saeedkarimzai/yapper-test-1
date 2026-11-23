@@ -33,7 +33,7 @@
       if(t.data.id===userId)throw Error("You can't DM yourself.");
       const f=await S.db.from("friendships").select("id").eq("status","accepted").or("and(requester_id.eq."+userId+",addressee_id.eq."+t.data.id+"),and(requester_id.eq."+t.data.id+",addressee_id.eq."+userId+")").maybeSingle();
       if(f.error)throw f.error;if(!f.data)throw Error("You can DM accepted friends only.");
-      peerId=t.data.id;peerName=t.data.username;$d("dm-active-title").textContent="Chat with @"+peerName;
+      peerId=t.data.id;peerName=t.data.username;$d("dm-active-title").textContent="Chat with @"+peerName;if(window.yapperDmTypingJoin)window.yapperDmTypingJoin(peerId,peerName);
       $d("dm-message-input").disabled=false;$d("dm-send").disabled=false;
       if(sub){S.db.removeChannel(sub);sub=null;}
       const filter="and(sender_id.eq."+userId+",recipient_id.eq."+peerId+"),and(sender_id.eq."+peerId+",recipient_id.eq."+userId+")";
@@ -56,7 +56,7 @@
     catch(x){note(x.message||String(x),true)}
     finally{$d("dm-send").disabled=!peerId;$d("dm-message-input").focus();}
   });
-  function setUser(id){userId=id;if(sub){S.db.removeChannel(sub);sub=null;}if(!id){peerId=null;peerName="";$d("dm-messages").replaceChildren();$d("dm-active-title").textContent="No direct message selected";$d("dm-message-input").disabled=true;$d("dm-send").disabled=true;}}
+  function setUser(id){userId=id;if(sub){S.db.removeChannel(sub);sub=null;}if(window.yapperDmTypingLeave)window.yapperDmTypingLeave();if(!id){peerId=null;peerName="";$d("dm-messages").replaceChildren();$d("dm-active-title").textContent="No direct message selected";$d("dm-message-input").disabled=true;$d("dm-send").disabled=true;}}
   S.db.auth.onAuthStateChange((event,session)=>{setUser(session?.user?.id||null);});
   S.db.auth.getSession().then(({data})=>setUser(data?.session?.user?.id||null));
 })();
