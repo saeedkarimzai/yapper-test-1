@@ -7,6 +7,16 @@ function toast(s){let e=$("toast");e.textContent=s;e.classList.add("show");clear
 function err(e){return e?.message||String(e)}function initial(s){return (s||"Y").trim().charAt(0).toUpperCase()||"Y"}function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function showAuth(){if(S.sub)S.db.removeChannel(S.sub);S.sub=null;setLiveStatus("idle");S.user=null;$("auth").classList.remove("hidden");$("app").classList.add("hidden")}
 function showApp(){ $("auth").classList.add("hidden");$("app").classList.remove("hidden");$("user-email").textContent=S.user.email||"Yapper";loadServers().catch(e=>toast(err(e)));const invite=new URLSearchParams(location.search).get("invite");if(invite){openModal("join");$("modal-input").value=invite;history.replaceState(null,"",location.pathname)}}
+function setupPasswordRecovery(){
+ S.db.auth.onAuthStateChange(async(event)=>{
+  if(event!=="PASSWORD_RECOVERY")return;
+  const next=prompt("Enter a new YAPPER password (at least 6 characters):");
+  if(!next||next.length<6){toast("Password reset cancelled. Use at least 6 characters.");return}
+  const {error}=await S.db.auth.updateUser({password:next});
+  if(error)toast("Could not update password: "+err(error));
+  else{toast("Password updated! You can now sign in as ceo.");await S.db.auth.signOut();showAuth()}
+ });
+}
 function setupAuth(){
  const muted=document.querySelector(".auth-card .muted");
  const emailLabel=$("email").previousElementSibling;
@@ -26,6 +36,15 @@ function setupAuth(){
   $("password").autocomplete=signup?"new-password":"current-password";
  };
  $("switch").onclick=setMode;
+ $("forgot-password").onclick=async()=>{
+  if(S.mode!=="signin"){toast("Switch to Sign in first.");return}
+  const email=prompt("Enter the school email linked to your YAPPER account:");
+  if(!email)return;
+  if(!email.includes("@")){toast("Enter a valid email address.");return}
+  const {error}=await S.db.auth.resetPasswordForEmail(email.trim(),{redirectTo:location.origin+location.pathname});
+  if(error)toast(err(error));else toast("Password reset email sent. Check your school inbox and open the reset link.");
+ };
+
  $("auth-form").onsubmit=async e=>{
   e.preventDefault();
   const login=$("email").value.trim();
@@ -137,4 +156,4 @@ $("copy-id").onclick=async()=>{if(!S.server)return toast("Select a server first.
 $("cancel").onclick=()=>$("modal").close();$("modal-form").onsubmit=async e=>{e.preventDefault();let v=$("modal-input").value.trim(),mode=S.dialogMode;if(!v)return;$("modal-submit").disabled=true;try{if(mode==="server"){let {data:s,error}=await S.db.from("servers").insert({name:v.slice(0,60),owner_id:S.user.id}).select("id,name,owner_id,created_at").single();if(error)throw error;let {error:me}=await S.db.from("server_members").insert({server_id:s.id,user_id:S.user.id,role:"owner"});if(me)throw me;let {error:ce}=await S.db.from("channels").insert({server_id:s.id,name:"general"});if(ce)throw ce;await loadServers();await selectServer(s.id);toast("Server created! Use Invite to share it with friends.")}else if(mode==="channel"){if(!S.server)throw Error("Select a server first.");let name=v.toLowerCase().replace(/[^a-z0-9_-]+/g,"-").replace(/^-+|-+$/g,"").slice(0,60);if(!name)throw Error("Use at least one letter or number.");let {error}=await S.db.from("channels").insert({server_id:S.server.id,name});if(error)throw error;await selectServer(S.server.id);toast("Channel created.")}else{let {data:serverId,error}=await S.db.rpc("join_server_by_invite",{p_code:v});if(error)throw error;await loadServers();await selectServer(serverId);toast("Joined server!")}$("modal").close()}catch(e){toast(err(e))}finally{$("modal-submit").disabled=false}};
 $("signout").onclick=async()=>{let {error}=await S.db.auth.signOut();if(error)toast(err(error));showAuth()};
 function loadSupabaseLibrary(){return new Promise((resolve,reject)=>{if(window.supabase?.createClient){resolve();return}const urls=["https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js","https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"];let index=0;const attempt=()=>{if(window.supabase?.createClient){resolve();return}if(index>=urls.length){reject(new Error("Could not load the Supabase library from either CDN."));return}const script=document.createElement("script");script.src=urls[index++];script.onload=()=>window.supabase?.createClient?resolve():attempt();script.onerror=attempt;document.head.appendChild(script)};attempt()})}
-function init(){if(SUPABASE_URL.includes("PASTE_YOUR")||SUPABASE_KEY.includes("PASTE_YOUR")){toast("Setup needed: add your Supabase URL and publishable key in app.js.");$("auth-submit").disabled=true;return}if(!window.supabase?.createClient){$("auth-submit").disabled=true;loadSupabaseLibrary().then(()=>{$("auth-submit").disabled=false;init()}).catch(e=>{toast("Supabase library could not load. Check your connection or try refreshing.");console.error(e)});return}S.db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);S.db.auth.getSession().then(({data,error})=>{if(error)toast(err(error));if(data?.session?.user)startUser(data.session.user)});S.db.auth.onAuthStateChange((event,session)=>{if(event==="SIGNED_IN"&&session?.user)startUser(session.user);if(event==="SIGNED_OUT")showAuth()});setupAuth()}init();
+function init(){if(SUPABASE_URL.includes("PASTE_YOUR")||SUPABASE_KEY.includes("PASTE_YOUR")){toast("Setup needed: add your Supabase URL and publishable key in app.js.");$("auth-submit").disabled=true;return}if(!window.supabase?.createClient){$("auth-submit").disabled=true;loadSupabaseLibrary().then(()=>{$("auth-submit").disabled=false;init()}).catch(e=>{toast("Supabase library could not load. Check your connection or try refreshing.");console.error(e)});return}S.db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);setupPasswordRecovery();S.db.auth.getSession().then(({data,error})=>{if(error)toast(err(error));if(data?.session?.user)startUser(data.session.user)});S.db.auth.onAuthStateChange((event,session)=>{if(event==="SIGNED_IN"&&session?.user)startUser(session.user);if(event==="SIGNED_OUT")showAuth()});setupAuth()}init();
