@@ -280,6 +280,11 @@ begin
   end loop;
 end $block$;
 
+-- Remove obsolete helpers from the retired group/voice and open server-ID join flows.
+drop function if exists private.yapper_is_group_member(uuid,uuid);
+drop function if exists private.yapper_is_group_owner(uuid,uuid);
+drop function if exists private.yapper_server_exists(uuid);
+
 -- Remove old exposed helper RPCs from earlier setup revisions, if present.
 drop function if exists public.yapper_is_server_member(uuid,uuid) cascade;
 drop function if exists public.yapper_is_group_member(uuid,uuid) cascade;
