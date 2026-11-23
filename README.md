@@ -58,4 +58,12 @@ Group-chat and voice-call features were removed from the current YAPPER interfac
 
 ## GIF search
 
-The GIF picker uses the GIPHY API. Open either GIF button, choose **Set API key**, and paste a GIPHY API key created at https://developers.giphy.com/dashboard/. Create separate Web API keys for server chat and private messages, then enter each key in its matching picker. Keys are stored only in that browser's local storage. The app requests PG-13-rated GIFs and stores the selected GIF URL inside the existing message content, so no database migration is needed. Each user who wants to search GIFs on another browser/device must add their own keys there; anyone can still view GIFs sent by other users.
+The GIF picker uses a Supabase Edge Function named `giphy-proxy`. The GIPHY API key stays on the server and is never stored in browser local storage or committed to this repository.
+
+One-time setup:
+1. Create a GIPHY Web API key at https://developers.giphy.com/dashboard/.
+2. In the Supabase project, open **Edge Functions → Secrets**.
+3. Add a secret named `GIPHY_API_KEY` and set its value to the GIPHY key.
+4. Refresh YAPPER. The GIF buttons in server chat and private DMs use the same server-side key.
+
+The Edge Function requires a signed-in Supabase session and requests PG-13-rated GIFs. If the secret is missing, GIF search returns a setup error. Selected GIF URLs are stored in the existing message content, so no database migration is required.
