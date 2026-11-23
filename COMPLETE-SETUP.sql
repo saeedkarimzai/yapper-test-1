@@ -23,6 +23,11 @@ create table if not exists public.server_members (
   created_at timestamptz not null default now(),
   primary key(server_id,user_id)
 );
+-- Existing YAPPER databases may have server_members without a role column.
+alter table public.server_members
+  add column if not exists role text not null default 'member'
+  check (role in ('owner','member'));
+
 create table if not exists public.channels (
   id uuid primary key default gen_random_uuid(),
   server_id uuid not null references public.servers(id) on delete cascade,
@@ -173,6 +178,21 @@ grant select,insert on public.group_chat_messages to authenticated;
 grant select,insert on public.direct_messages to authenticated;
 grant select,insert,delete on public.voice_signals to authenticated;
 grant select,insert,delete on public.message_reactions to authenticated;
+
+-- Retired group-chat tables from an older prototype are not used by this client.
+-- Revoke direct Data API access if they exist.
+do $legacy$
+begin
+  if to_regclass('public.group_conversations') is not null then
+    execute 'revoke all on public.group_conversations from anon, authenticated';
+  end if;
+  if to_regclass('public.group_members') is not null then
+    execute 'revoke all on public.group_members from anon, authenticated';
+  end if;
+  if to_regclass('public.group_messages') is not null then
+    execute 'revoke all on public.group_messages from anon, authenticated';
+  end if;
+end $legacy$;
 
 
 -- Remove legacy policies on these app tables before applying the known-safe policy set.
