@@ -18,7 +18,7 @@ A Discord-inspired browser chat app built with HTML, CSS, JavaScript, and Supaba
 1. Open the Supabase project configured in `app.js`.
 2. If the project is paused, restore it in the Supabase dashboard first. Database setup and live chat cannot work while it is inactive.
 3. Open **SQL Editor**.
-4. Run the complete `COMPLETE-SETUP.sql` file from top to bottom. It creates the tables, indexes, profile trigger, storage bucket, Realtime publication entries, and row-level security policies required by the current client. Its security-definer helper functions live in the non-exposed `private` schema. The older partial SQL files are deprecated; do not run them.
+4. Run the complete `COMPLETE-SETUP.sql` file from top to bottom. It creates the tables, indexes, profile trigger, storage bucket, Realtime publication entries, and row-level security policies required by the current client. Its security-definer helper functions live in the non-exposed `private` schema. Keep `private` out of Supabase's exposed Data API schemas. The older partial SQL files are deprecated; do not run them.
 5. In **Authentication → URL Configuration**, add your GitHub Pages URL to the allowed redirect URLs.
 6. Enable email/password authentication. Email confirmation can remain enabled.
 7. In **Storage**, confirm the `yapper-avatars` bucket exists. The setup script creates it.
