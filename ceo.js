@@ -4,7 +4,7 @@
  const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const say=(s,bad=false)=>{const e=$("ceo-feedback");if(e){e.textContent=s;e.classList.toggle("error",bad)}};
  async function check(){
-  if(!window.S?.db||!S.user){state.enabled=false;$("open-ceo")?.classList.add("hidden");return}
+  if(typeof S==="undefined"||!S.db||!S.user){state.enabled=false;$("open-ceo")?.classList.add("hidden");return}
   const {data,error}=await S.db.from("admin_users").select("user_id").eq("user_id",S.user.id).maybeSingle();
   state.enabled=!error&&!!data;
   $("open-ceo")?.classList.toggle("hidden",!state.enabled);
@@ -41,6 +41,6 @@
    if(error)throw error;$("ceo-title").value="";$("ceo-body").value="";await load();say("Announcement published.");
   }catch(error){say(error.message||String(error),true)}finally{button.disabled=false}
  });
- const wait=setInterval(()=>{if(window.S?.db){clearInterval(wait);check();S.db.auth.onAuthStateChange(()=>setTimeout(check,0))}},200);
+ const wait=setInterval(()=>{if(typeof S!=="undefined"&&S.db){clearInterval(wait);check();S.db.auth.onAuthStateChange(()=>setTimeout(check,0))}},200);
  window.yapperCheckCEO=check;
 })();
