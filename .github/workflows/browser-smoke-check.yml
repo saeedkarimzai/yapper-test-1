@@ -38,14 +38,14 @@ jobs:
           if (!htmlFiles.length) errors.push('No HTML entry point found.');
 
           function checkJs(source, label) {
-            const temp = path.join(os.tmpdir(), 'repo-check-' + Math.random().toString(36).slice(2) + '.mjs');
+            const temp = path.join(os.tmpdir(), 'repo-check-' + process.pid + '-' + Math.random().toString(36).slice(2) + '.mjs');
             fs.writeFileSync(temp, source);
             const result = spawnSync(process.execPath, ['--check', temp], { encoding: 'utf8' });
             fs.rmSync(temp, { force: true });
             if (result.status !== 0) errors.push(label + ': ' + (result.stderr || result.stdout).trim());
           }
           function isRemote(value) {
-            return /^(?:https?:)?\/\//i.test(value) || /^(?:data:|blob:|javascript:|mailto:|tel:|#)/i.test(value);
+            return /^(?:https?:)?\/\//i.test(value) || /^(?:data:|blob:|javascript:|mailto:|tel:|about:|chrome-extension:|file:|#)/i.test(value);
           }
           for (const file of htmlFiles) {
             const source = fs.readFileSync(file, 'utf8');
@@ -63,7 +63,9 @@ jobs:
             for (const match of source.matchAll(scripts)) {
               const attrs = match[1];
               const body = match[2].trim();
-              if (/\bsrc\s*=/.test(attrs) || !body || /type\s*=\s*["'](?:application\/json|importmap)["']/i.test(attrs)) continue;
+              const type = attrs.match(/\btype\s*=\s*["']([^"']+)["']/i)?.[1]?.toLowerCase();
+              const jsTypes = new Set(['module','text/javascript','application/javascript','text/ecmascript','application/ecmascript']);
+              if (/\bsrc\s*=/.test(attrs) || !body || (type && !jsTypes.has(type))) continue;
               checkJs(body, path.relative(root, file) + ' inline script');
             }
           }
