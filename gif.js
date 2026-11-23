@@ -1,9 +1,9 @@
 // YAPPER searchable GIF picker powered by GIPHY.
 (function(){
-  const KEY_NAME="yapper_giphy_api_key";
+  function keyName(target){return "yapper_giphy_api_key_"+target;}
+  const timers=new WeakMap();
   const $g=id=>document.getElementById(id);
-  let searchTimer=null,requestNo=0;
-  function apiKey(){return localStorage.getItem(KEY_NAME)||"";}
+  function apiKey(target){return localStorage.getItem(keyName(target))||"";}
   function setStatus(picker,message){const el=picker.querySelector("[data-gif-status]");if(el)el.textContent=message;}
   function renderContent(target,content,kind){
     const match=String(content||"").match(/^\[\[GIF:(https:\/\/[^\]]+)\]\]$/);
@@ -15,11 +15,11 @@
     target.append(img);
   }
   window.yapperRenderContent=renderContent;
-  function configureKey(picker){
-    const value=prompt("Paste your GIPHY API key. Get one at developers.giphy.com/dashboard/. It is saved only in this browser.",apiKey());
+  function configureKey(picker,target){
+    const value=prompt("Paste your GIPHY API key for "+(target==="dm"?"private messages":"server chat")+". Get one at developers.giphy.com/dashboard/. It is saved only in this browser.",apiKey(target));
     if(value===null)return;
-    if(!value.trim()){localStorage.removeItem(KEY_NAME);setStatus(picker,"API key removed. Add a GIPHY key to search GIFs.");return;}
-    localStorage.setItem(KEY_NAME,value.trim());load(picker,"");
+    if(!value.trim()){localStorage.removeItem(keyName(target));setStatus(picker,"API key removed. Add a GIPHY key to search GIFs.");return;}
+    localStorage.setItem(keyName(target),value.trim());load(picker,"",target);
   }
   function makeCard(gif,picker,target){
     const image=gif?.images?.fixed_width_small?.url||gif?.images?.fixed_width?.url||gif?.images?.downsized?.url;
@@ -44,21 +44,22 @@
     });
     picker.querySelector("[data-gif-results]").append(button);
   }
-  async function load(picker,query){
-    const key=apiKey();
+  async function load(picker,query,target){
+    const key=apiKey(target);
     if(!key){setStatus(picker,"Add a GIPHY API key to search and send GIFs.");picker.querySelector("[data-gif-results]").replaceChildren();return;}
-    const seq=++requestNo;setStatus(picker,"Finding GIFs…");picker.querySelector("[data-gif-results]").replaceChildren();
+    const seq=Number(picker.dataset.requestNo||0)+1;picker.dataset.requestNo=String(seq);
+    setStatus(picker,"Finding GIFs…");picker.querySelector("[data-gif-results]").replaceChildren();
     const endpoint=query.trim()?"search":"trending";
     const params=new URLSearchParams({api_key:key,limit:"24",rating:"pg-13",bundle:"messaging_non_clips"});
     if(query.trim())params.set("q",query.trim());
     try{
       const response=await fetch("https://api.giphy.com/v1/gifs/"+endpoint+"?"+params.toString());
       if(!response.ok)throw Error(response.status===401||response.status===403?"GIPHY rejected that API key. Check it and try again.":"GIPHY request failed ("+response.status+").");
-      const result=await response.json();if(seq!==requestNo)return;
+      const result=await response.json();if(seq!==Number(picker.dataset.requestNo))return;
       const rows=result.data||[];if(!rows.length){setStatus(picker,"No GIFs found. Try another search.");return;}
       setStatus(picker,query.trim()?"Search results":"Trending GIFs");
       rows.forEach(g=>makeCard(g,picker,target));
-    }catch(e){if(seq===requestNo)setStatus(picker,e.message||String(e));}
+    }catch(e){if(seq===Number(picker.dataset.requestNo))setStatus(picker,e.message||String(e));}
   }
   function setup(id,toggleId,target){
     const picker=$g(id),toggle=$g(toggleId);if(!picker||!toggle)return;
@@ -66,12 +67,12 @@
     toggle.addEventListener("click",()=>{
       document.querySelectorAll(".gif-picker").forEach(p=>{if(p!==picker)p.classList.add("hidden");});
       picker.classList.toggle("hidden");
-      if(!picker.classList.contains("hidden")){if(!apiKey())setStatus(picker,"Add a GIPHY API key to search and send GIFs.");else load(picker,"");input.focus();}
+      if(!picker.classList.contains("hidden")){if(!apiKey(target))setStatus(picker,"Add a GIPHY API key to search and send GIFs.");else load(picker,"",target);input.focus();}
     });
-    picker.querySelector("[data-gif-key]").addEventListener("click",()=>configureKey(picker));
+    picker.querySelector("[data-gif-key]").addEventListener("click",()=>configureKey(picker,target));
     picker.querySelector("[data-gif-close]").addEventListener("click",()=>picker.classList.add("hidden"));
-    input.addEventListener("input",()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>load(picker,input.value),300);});
-    input.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();clearTimeout(searchTimer);load(picker,input.value);}});
+    input.addEventListener("input",()=>{clearTimeout(timers.get(picker));timers.set(picker,setTimeout(()=>load(picker,input.value,target),300));});
+    input.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();clearTimeout(timers.get(picker));load(picker,input.value,target);}});
   }
   setup("gif-picker","gif-toggle","main");
   setup("dm-gif-picker","dm-gif-toggle","dm");
@@ -83,6 +84,5 @@
   if(typeof S!=="undefined"&&S.db){S.db.auth.onAuthStateChange(()=>setTimeout(syncButtons,0));S.db.auth.getSession().then(()=>syncButtons());}
   const originalSelect=window.selectChannel;
   if(typeof originalSelect==="function")window.selectChannel=async function(id){const r=await originalSelect(id);syncButtons();return r;};
-  document.addEventListener("click",e=>{if(e.target===document.querySelector(".app"))document.querySelectorAll(".gif-picker").forEach(p=>p.classList.add("hidden"));});
   setInterval(syncButtons,1200);
 })();
