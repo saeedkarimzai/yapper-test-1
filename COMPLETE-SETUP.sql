@@ -221,6 +221,13 @@ drop function if exists public.yapper_is_group_owner(uuid,uuid) cascade;
 drop function if exists public.yapper_are_friends(uuid,uuid) cascade;
 drop function if exists public.yapper_server_exists(uuid) cascade;
 
+-- Lock down leftover SECURITY DEFINER RPCs from the previous YAPPER prototype.
+-- rls_auto_enable remains installed as an event-trigger callback, not a client RPC.
+revoke all on function public.rls_auto_enable() from public, anon, authenticated;
+revoke all on function public.yapper_is_group_member(uuid) from public, anon, authenticated;
+revoke all on function public.yapper_is_member(uuid) from public, anon, authenticated;
+revoke all on function public.yapper_is_owner(uuid) from public, anon, authenticated;
+
 -- Profiles
 drop policy if exists "profiles readable by signed in users" on public.profiles;
 create policy "profiles readable by signed in users" on public.profiles for select to authenticated using(true);
