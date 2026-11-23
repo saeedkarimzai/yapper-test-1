@@ -1,0 +1,40 @@
+name: YAPPER browser runtime checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Serve app
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/app-server.log 2>&1 &
+      - name: Run browser checks
+        run: |
+          node <<'NODE'
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+            const errors = [];
+            page.on('pageerror', error => errors.push(error.message));
+            await page.goto('http://127.0.0.1:8000/index.html', { waitUntil: 'domcontentloaded' });
+            await page.waitForSelector('#auth-form');
+            await page.waitForTimeout(1500);
+            if (!(await page.locator('#auth-submit').isVisible())) throw new Error('YAPPER sign-in form did not initialize.');
+            if (!(await page.locator('#app').count())) throw new Error('YAPPER app shell is missing.');
+            if (errors.length) throw new Error(errors.join('\n'));
+            await browser.close();
+            console.log('Passed: browser UI initialized.');
+          })().catch(error => { console.error(error); process.exit(1); });
+          NODE
