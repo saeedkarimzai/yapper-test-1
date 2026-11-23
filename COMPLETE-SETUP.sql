@@ -111,13 +111,24 @@ create index if not exists voice_signals_recipient_idx on public.voice_signals(r
 create index if not exists reactions_message_idx on public.message_reactions(message_id);
 create index if not exists group_chat_messages_user_id_idx on public.group_chat_messages(user_id);
 create index if not exists group_chats_owner_id_idx on public.group_chats(owner_id);
-create index if not exists group_conversations_owner_id_idx on public.group_conversations(owner_id);
-create index if not exists group_members_user_id_idx on public.group_members(user_id);
-create index if not exists group_messages_user_id_idx on public.group_messages(user_id);
 create index if not exists message_reactions_user_id_idx on public.message_reactions(user_id);
 create index if not exists messages_user_id_idx on public.messages(user_id);
 create index if not exists servers_owner_id_idx on public.servers(owner_id);
 create index if not exists voice_signals_sender_id_idx on public.voice_signals(sender_id);
+
+-- Index old prototype tables only when they still exist.
+do $legacy_index$
+begin
+  if to_regclass('public.group_conversations') is not null then
+    execute 'create index if not exists group_conversations_owner_id_idx on public.group_conversations(owner_id)';
+  end if;
+  if to_regclass('public.group_members') is not null then
+    execute 'create index if not exists group_members_user_id_idx on public.group_members(user_id)';
+  end if;
+  if to_regclass('public.group_messages') is not null then
+    execute 'create index if not exists group_messages_user_id_idx on public.group_messages(user_id)';
+  end if;
+end $legacy_index$;
 
 -- Remove redundant indexes inherited from the prototype schema.
 drop index if exists public.friendships_requester_idx;
