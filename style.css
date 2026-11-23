@@ -197,3 +197,6 @@ footer{background:#232428;padding:9px 8px;gap:5px}
 
 /* Live typing indicator */
 .typing-indicator{min-height:0;height:0;overflow:hidden;padding:0 22px;color:#a99bea;font-size:11px;opacity:0;transition:opacity .15s ease}.typing-indicator.visible{height:auto;min-height:24px;padding:5px 22px 2px;opacity:1}
+
+/* Private-message typing indicator */
+.dm-typing-indicator{padding-left:10px;padding-right:10px}.dm-typing-indicator.visible{min-height:22px;padding-top:4px}
