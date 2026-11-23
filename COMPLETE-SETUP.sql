@@ -104,33 +104,37 @@ create index if not exists dm_pair_created_idx on public.direct_messages(sender_
 create index if not exists voice_signals_recipient_idx on public.voice_signals(recipient_id,created_at);
 create index if not exists reactions_message_idx on public.message_reactions(message_id);
 
--- Security-definer helpers avoid recursive RLS policy checks.
-create or replace function public.yapper_is_server_member(p_server_id uuid,p_user_id uuid)
-returns boolean language sql stable security definer set search_path = ''
-as $$ select exists(select 1 from public.server_members m where m.server_id=p_server_id and m.user_id=p_user_id); $$;
-create or replace function public.yapper_is_group_member(p_group_id uuid,p_user_id uuid)
-returns boolean language sql stable security definer set search_path = ''
-as $$ select exists(select 1 from public.group_chat_members m where m.group_id=p_group_id and m.user_id=p_user_id); $$;
-create or replace function public.yapper_is_group_owner(p_group_id uuid,p_user_id uuid)
-returns boolean language sql stable security definer set search_path = ''
-as $$ select exists(select 1 from public.group_chats g where g.id=p_group_id and g.owner_id=p_user_id); $$;
-create or replace function public.yapper_are_friends(p_user_a uuid,p_user_b uuid)
-returns boolean language sql stable security definer set search_path = ''
-as $$ select exists(select 1 from public.friendships f where f.status='accepted' and ((f.requester_id=p_user_a and f.addressee_id=p_user_b) or (f.requester_id=p_user_b and f.addressee_id=p_user_a))); $$;
-create or replace function public.yapper_server_exists(p_server_id uuid)
-returns boolean language sql stable security definer set search_path = ''
-as $$ select exists(select 1 from public.servers s where s.id=p_server_id); $$;
+-- Private security-definer helpers avoid recursive RLS checks without exposing RPCs.
+create schema if not exists private;
+revoke all on schema private from public, anon, authenticated;
+grant usage on schema private to authenticated;
 
-revoke all on function public.yapper_is_server_member(uuid,uuid) from public,anon;
-revoke all on function public.yapper_is_group_member(uuid,uuid) from public,anon;
-revoke all on function public.yapper_is_group_owner(uuid,uuid) from public,anon;
-revoke all on function public.yapper_are_friends(uuid,uuid) from public,anon;
-revoke all on function public.yapper_server_exists(uuid) from public,anon;
-grant execute on function public.yapper_is_server_member(uuid,uuid) to authenticated;
-grant execute on function public.yapper_is_group_member(uuid,uuid) to authenticated;
-grant execute on function public.yapper_is_group_owner(uuid,uuid) to authenticated;
-grant execute on function public.yapper_are_friends(uuid,uuid) to authenticated;
-grant execute on function public.yapper_server_exists(uuid) to authenticated;
+create or replace function private.yapper_is_server_member(p_server_id uuid,p_user_id uuid)
+returns boolean language sql stable security definer set search_path = ''
+as $$ select p_user_id=auth.uid() and exists(select 1 from public.server_members m where m.server_id=p_server_id and m.user_id=p_user_id); $$;
+create or replace function private.yapper_is_group_member(p_group_id uuid,p_user_id uuid)
+returns boolean language sql stable security definer set search_path = ''
+as $$ select p_user_id=auth.uid() and exists(select 1 from public.group_chat_members m where m.group_id=p_group_id and m.user_id=p_user_id); $$;
+create or replace function private.yapper_is_group_owner(p_group_id uuid,p_user_id uuid)
+returns boolean language sql stable security definer set search_path = ''
+as $$ select p_user_id=auth.uid() and exists(select 1 from public.group_chats g where g.id=p_group_id and g.owner_id=p_user_id); $$;
+create or replace function private.yapper_are_friends(p_user_a uuid,p_user_b uuid)
+returns boolean language sql stable security definer set search_path = ''
+as $$ select (p_user_a=auth.uid() or p_user_b=auth.uid()) and exists(select 1 from public.friendships f where f.status='accepted' and ((f.requester_id=p_user_a and f.addressee_id=p_user_b) or (f.requester_id=p_user_b and f.addressee_id=p_user_a))); $$;
+create or replace function private.yapper_server_exists(p_server_id uuid)
+returns boolean language sql stable security definer set search_path = ''
+as $$ select auth.uid() is not null and exists(select 1 from public.servers s where s.id=p_server_id); $$;
+
+revoke all on function private.yapper_is_server_member(uuid,uuid) from public,anon,authenticated;
+revoke all on function private.yapper_is_group_member(uuid,uuid) from public,anon,authenticated;
+revoke all on function private.yapper_is_group_owner(uuid,uuid) from public,anon,authenticated;
+revoke all on function private.yapper_are_friends(uuid,uuid) from public,anon,authenticated;
+revoke all on function private.yapper_server_exists(uuid) from public,anon,authenticated;
+grant execute on function private.yapper_is_server_member(uuid,uuid) to authenticated;
+grant execute on function private.yapper_is_group_member(uuid,uuid) to authenticated;
+grant execute on function private.yapper_is_group_owner(uuid,uuid) to authenticated;
+grant execute on function private.yapper_are_friends(uuid,uuid) to authenticated;
+grant execute on function private.yapper_server_exists(uuid) to authenticated;
 
 alter table public.profiles enable row level security;
 alter table public.servers enable row level security;
@@ -162,7 +166,14 @@ begin
   loop
     execute format('drop policy if exists %I on %I.%I',p.policyname,p.schemaname,p.tablename);
   end loop;
-end $;
+end $block$;
+
+-- Remove old exposed helper RPCs from earlier setup revisions, if present.
+drop function if exists public.yapper_is_server_member(uuid,uuid) cascade;
+drop function if exists public.yapper_is_group_member(uuid,uuid) cascade;
+drop function if exists public.yapper_is_group_owner(uuid,uuid) cascade;
+drop function if exists public.yapper_are_friends(uuid,uuid) cascade;
+drop function if exists public.yapper_server_exists(uuid) cascade;
 
 -- Profiles
 drop policy if exists "profiles readable by signed in users" on public.profiles;
@@ -174,7 +185,7 @@ create policy "users update own profile" on public.profiles for update to authen
 
 -- Servers and membership
 drop policy if exists "members can read servers" on public.servers;
-create policy "members can read servers" on public.servers for select to authenticated using(owner_id=(select auth.uid()) or public.yapper_is_server_member(id,(select auth.uid())));
+create policy "members can read servers" on public.servers for select to authenticated using(owner_id=(select auth.uid()) or private.yapper_is_server_member(id,(select auth.uid())));
 drop policy if exists "users create servers" on public.servers;
 create policy "users create servers" on public.servers for insert to authenticated with check(owner_id=(select auth.uid()));
 drop policy if exists "owners update servers" on public.servers;
@@ -182,26 +193,26 @@ create policy "owners update servers" on public.servers for update to authentica
 drop policy if exists "owners delete servers" on public.servers;
 create policy "owners delete servers" on public.servers for delete to authenticated using(owner_id=(select auth.uid()));
 drop policy if exists "members can read memberships" on public.server_members;
-create policy "members can read memberships" on public.server_members for select to authenticated using(user_id=(select auth.uid()) or public.yapper_is_server_member(server_id,(select auth.uid())));
+create policy "members can read memberships" on public.server_members for select to authenticated using(user_id=(select auth.uid()) or private.yapper_is_server_member(server_id,(select auth.uid())));
 drop policy if exists "owners add memberships" on public.server_members;
 create policy "owners add memberships" on public.server_members for insert to authenticated with check(
   (user_id=(select auth.uid()) and role='owner' and exists(select 1 from public.servers s where s.id=server_id and s.owner_id=(select auth.uid())))
-  or (user_id=(select auth.uid()) and role='member' and public.yapper_server_exists(server_id))
+  or (user_id=(select auth.uid()) and role='member' and private.yapper_server_exists(server_id))
 );
 drop policy if exists "users leave own membership" on public.server_members;
 create policy "users leave own membership" on public.server_members for delete to authenticated using(user_id=(select auth.uid()) and role<>'owner');
 
 -- Channels and messages
 drop policy if exists "members read channels" on public.channels;
-create policy "members read channels" on public.channels for select to authenticated using(public.yapper_is_server_member(server_id,(select auth.uid())));
+create policy "members read channels" on public.channels for select to authenticated using(private.yapper_is_server_member(server_id,(select auth.uid())));
 drop policy if exists "members create channels" on public.channels;
-create policy "members create channels" on public.channels for insert to authenticated with check(public.yapper_is_server_member(server_id,(select auth.uid())));
+create policy "members create channels" on public.channels for insert to authenticated with check(private.yapper_is_server_member(server_id,(select auth.uid())));
 drop policy if exists "members read messages" on public.messages;
-create policy "members read messages" on public.messages for select to authenticated using(exists(select 1 from public.channels c where c.id=channel_id and public.yapper_is_server_member(c.server_id,(select auth.uid()))));
+create policy "members read messages" on public.messages for select to authenticated using(exists(select 1 from public.channels c where c.id=channel_id and private.yapper_is_server_member(c.server_id,(select auth.uid()))));
 drop policy if exists "members send messages" on public.messages;
-create policy "members send messages" on public.messages for insert to authenticated with check(user_id=(select auth.uid()) and exists(select 1 from public.channels c where c.id=channel_id and public.yapper_is_server_member(c.server_id,(select auth.uid()))));
+create policy "members send messages" on public.messages for insert to authenticated with check(user_id=(select auth.uid()) and exists(select 1 from public.channels c where c.id=channel_id and private.yapper_is_server_member(c.server_id,(select auth.uid()))));
 drop policy if exists "authors edit own messages" on public.messages;
-create policy "authors edit own messages" on public.messages for update to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()) and exists(select 1 from public.channels c where c.id=channel_id and public.yapper_is_server_member(c.server_id,(select auth.uid()))));
+create policy "authors edit own messages" on public.messages for update to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()) and exists(select 1 from public.channels c where c.id=channel_id and private.yapper_is_server_member(c.server_id,(select auth.uid()))));
 drop policy if exists "authors delete own messages" on public.messages;
 create policy "authors delete own messages" on public.messages for delete to authenticated using(user_id=(select auth.uid()));
 
@@ -217,29 +228,29 @@ create policy "participants remove friendships" on public.friendships for delete
 
 -- Group chats
 drop policy if exists "members read groups" on public.group_chats;
-create policy "members read groups" on public.group_chats for select to authenticated using(owner_id=(select auth.uid()) or public.yapper_is_group_member(id,(select auth.uid())));
+create policy "members read groups" on public.group_chats for select to authenticated using(owner_id=(select auth.uid()) or private.yapper_is_group_member(id,(select auth.uid())));
 drop policy if exists "users create groups" on public.group_chats;
 create policy "users create groups" on public.group_chats for insert to authenticated with check(owner_id=(select auth.uid()));
 drop policy if exists "owners update groups" on public.group_chats;
 create policy "owners update groups" on public.group_chats for update to authenticated using(owner_id=(select auth.uid())) with check(owner_id=(select auth.uid()));
 drop policy if exists "members read group members" on public.group_chat_members;
-create policy "members read group members" on public.group_chat_members for select to authenticated using(public.yapper_is_group_member(group_id,(select auth.uid())) or public.yapper_is_group_owner(group_id,(select auth.uid())));
+create policy "members read group members" on public.group_chat_members for select to authenticated using(private.yapper_is_group_member(group_id,(select auth.uid())) or private.yapper_is_group_owner(group_id,(select auth.uid())));
 drop policy if exists "owners add group members" on public.group_chat_members;
-create policy "owners add group members" on public.group_chat_members for insert to authenticated with check(public.yapper_is_group_owner(group_id,(select auth.uid())));
+create policy "owners add group members" on public.group_chat_members for insert to authenticated with check(private.yapper_is_group_owner(group_id,(select auth.uid())));
 drop policy if exists "owners remove group members" on public.group_chat_members;
-create policy "owners remove group members" on public.group_chat_members for delete to authenticated using(public.yapper_is_group_owner(group_id,(select auth.uid())) or user_id=(select auth.uid()));
+create policy "owners remove group members" on public.group_chat_members for delete to authenticated using(private.yapper_is_group_owner(group_id,(select auth.uid())) or user_id=(select auth.uid()));
 drop policy if exists "members read group messages" on public.group_chat_messages;
-create policy "members read group messages" on public.group_chat_messages for select to authenticated using(public.yapper_is_group_member(group_id,(select auth.uid())));
+create policy "members read group messages" on public.group_chat_messages for select to authenticated using(private.yapper_is_group_member(group_id,(select auth.uid())));
 drop policy if exists "members send group messages" on public.group_chat_messages;
-create policy "members send group messages" on public.group_chat_messages for insert to authenticated with check(user_id=(select auth.uid()) and public.yapper_is_group_member(group_id,(select auth.uid())));
+create policy "members send group messages" on public.group_chat_messages for insert to authenticated with check(user_id=(select auth.uid()) and private.yapper_is_group_member(group_id,(select auth.uid())));
 
 -- Direct messages and one-to-one voice signaling: accepted friends only.
 drop policy if exists "friends read direct messages" on public.direct_messages;
-create policy "friends read direct messages" on public.direct_messages for select to authenticated using((sender_id=(select auth.uid()) or recipient_id=(select auth.uid())) and public.yapper_are_friends(sender_id,recipient_id));
+create policy "friends read direct messages" on public.direct_messages for select to authenticated using((sender_id=(select auth.uid()) or recipient_id=(select auth.uid())) and private.yapper_are_friends(sender_id,recipient_id));
 drop policy if exists "friends send direct messages" on public.direct_messages;
-create policy "friends send direct messages" on public.direct_messages for insert to authenticated with check(sender_id=(select auth.uid()) and public.yapper_are_friends(sender_id,recipient_id));
+create policy "friends send direct messages" on public.direct_messages for insert to authenticated with check(sender_id=(select auth.uid()) and private.yapper_are_friends(sender_id,recipient_id));
 drop policy if exists "participants create voice signals" on public.voice_signals;
-create policy "participants create voice signals" on public.voice_signals for insert to authenticated with check(sender_id=(select auth.uid()) and public.yapper_are_friends(sender_id,recipient_id));
+create policy "participants create voice signals" on public.voice_signals for insert to authenticated with check(sender_id=(select auth.uid()) and private.yapper_are_friends(sender_id,recipient_id));
 drop policy if exists "call participants read voice signals" on public.voice_signals;
 create policy "call participants read voice signals" on public.voice_signals for select to authenticated using(sender_id=(select auth.uid()) or recipient_id=(select auth.uid()));
 drop policy if exists "call participants delete voice signals" on public.voice_signals;
@@ -247,9 +258,9 @@ create policy "call participants delete voice signals" on public.voice_signals f
 
 -- Reactions
 drop policy if exists "members read reactions" on public.message_reactions;
-create policy "members read reactions" on public.message_reactions for select to authenticated using(exists(select 1 from public.messages m join public.channels c on c.id=m.channel_id where m.id=message_id and public.yapper_is_server_member(c.server_id,(select auth.uid()))));
+create policy "members read reactions" on public.message_reactions for select to authenticated using(exists(select 1 from public.messages m join public.channels c on c.id=m.channel_id where m.id=message_id and private.yapper_is_server_member(c.server_id,(select auth.uid()))));
 drop policy if exists "members add own reactions" on public.message_reactions;
-create policy "members add own reactions" on public.message_reactions for insert to authenticated with check(user_id=(select auth.uid()) and exists(select 1 from public.messages m join public.channels c on c.id=m.channel_id where m.id=message_id and public.yapper_is_server_member(c.server_id,(select auth.uid()))));
+create policy "members add own reactions" on public.message_reactions for insert to authenticated with check(user_id=(select auth.uid()) and exists(select 1 from public.messages m join public.channels c on c.id=m.channel_id where m.id=message_id and private.yapper_is_server_member(c.server_id,(select auth.uid()))));
 drop policy if exists "users remove own reactions" on public.message_reactions;
 create policy "users remove own reactions" on public.message_reactions for delete to authenticated using(user_id=(select auth.uid()));
 
@@ -263,7 +274,8 @@ begin
   on conflict(id) do nothing;
   return new;
 end;
-$$;
+$;
+revoke all on function public.yapper_create_profile() from public, anon, authenticated;
 drop trigger if exists yapper_create_profile_after_signup on auth.users;
 create trigger yapper_create_profile_after_signup after insert on auth.users
 for each row execute function public.yapper_create_profile();
