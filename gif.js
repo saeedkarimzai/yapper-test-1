@@ -18,7 +18,7 @@
     const sendUrl=gif?.images?.fixed_width?.url||gif?.images?.original?.url;
     if(!image||!sendUrl)return;
     let parsed;try{parsed=new URL(sendUrl);}catch{return;}
-    if(!/^(media\\d*|i)\\.giphy\\.com$/.test(parsed.hostname))return;
+    if(!(parsed.hostname==="i.giphy.com"||(parsed.hostname.startsWith("media")&&parsed.hostname.endsWith(".giphy.com"))))return;
     const button=document.createElement("button");button.type="button";button.className="gif-result";button.title="Send this GIF";
     const img=document.createElement("img");img.src=image;img.alt=gif.title||"GIF";img.loading="lazy";img.referrerPolicy="no-referrer";button.append(img);
     button.addEventListener("click",async()=>{
