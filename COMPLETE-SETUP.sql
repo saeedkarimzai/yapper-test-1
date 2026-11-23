@@ -121,7 +121,7 @@ returns boolean language sql stable security definer set search_path = ''
 as $$ select p_user_id=auth.uid() and exists(select 1 from public.server_members m where m.server_id=p_server_id and m.user_id=p_user_id); $$;
 create or replace function private.yapper_are_friends(p_user_a uuid,p_user_b uuid)
 returns boolean language sql stable security definer set search_path = ''
-as $ select (p_user_a=auth.uid() or p_user_b=auth.uid()) and exists(select 1 from public.friendships f where f.status='accepted' and ((f.requester_id=p_user_a and f.addressee_id=p_user_b) or (f.requester_id=p_user_b and f.addressee_id=p_user_a))); $;
+as $$ select (p_user_a=auth.uid() or p_user_b=auth.uid()) and exists(select 1 from public.friendships f where f.status='accepted' and ((f.requester_id=p_user_a and f.addressee_id=p_user_b) or (f.requester_id=p_user_b and f.addressee_id=p_user_a))); $$;
 
 -- Invite operations run with elevated privileges, but only after validating the owner or invite code.
 create or replace function private.create_server_invite(
