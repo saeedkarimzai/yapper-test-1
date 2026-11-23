@@ -7,7 +7,64 @@ function toast(s){let e=$("toast");e.textContent=s;e.classList.add("show");clear
 function err(e){return e?.message||String(e)}function initial(s){return (s||"Y").trim().charAt(0).toUpperCase()||"Y"}function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function showAuth(){if(S.sub)S.db.removeChannel(S.sub);S.sub=null;setLiveStatus("idle");S.user=null;$("auth").classList.remove("hidden");$("app").classList.add("hidden")}
 function showApp(){ $("auth").classList.add("hidden");$("app").classList.remove("hidden");$("user-email").textContent=S.user.email||"Yapper";loadServers().catch(e=>toast(err(e)));const invite=new URLSearchParams(location.search).get("invite");if(invite){openModal("join");$("modal-input").value=invite;history.replaceState(null,"",location.pathname)}}
-function setupAuth(){$("switch").onclick=()=>{S.mode=S.mode==="signin"?"signup":"signin";$("auth-title").textContent=S.mode==="signin"?"Welcome back.":"Join YAPPER."; $("auth-submit").textContent=S.mode==="signin"?"Sign in":"Create account";$("switch-text").textContent=S.mode==="signin"?"New to YAPPER?":"Already have an account?";$("switch").textContent=S.mode==="signin"?"Create an account":"Sign in"};$("auth-form").onsubmit=async e=>{e.preventDefault();let email=$("email").value.trim(),password=$("password").value;$("auth-submit").disabled=true;try{let r=S.mode==="signup"?await S.db.auth.signUp({email,password}):await S.db.auth.signInWithPassword({email,password});if(r.error)throw r.error;if(S.mode==="signup"&&!r.data.session)toast("Account created. Check your email to confirm, then sign in.");else if(r.data.user)startUser(r.data.user)}catch(e){toast(err(e))}finally{$("auth-submit").disabled=false}}}
+function setupAuth(){
+ const muted=document.querySelector(".auth-card .muted");
+ const setMode=()=>{
+  S.mode=S.mode==="signin"?"signup":"signin";
+  const signup=S.mode==="signup";
+  $("auth-title").textContent=signup?"Join YAPPER.":"Welcome back.";
+  if(muted)muted.textContent=signup?"Create your account with an email address and password.":"Sign in to your YAPPER account.";
+  $("auth-submit").textContent=signup?"Create account":"Sign in";
+  $("switch-text").textContent=signup?"Already have an account?":"New to YAPPER?";
+  $("switch").textContent=signup?"Sign in":"Create an account";
+  $("password").autocomplete=signup?"new-password":"current-password";
+ };
+ $("switch").onclick=setMode;
+ $("auth-form").onsubmit=async e=>{
+  e.preventDefault();
+  const email=$("email").value.trim();
+  const password=$("password").value;
+  const signup=S.mode==="signup";
+  $("auth-submit").disabled=true;
+  $("auth-submit").textContent=signup?"Creating account…":"Signing in…";
+  try{
+   let r;
+   if(signup){
+    const redirectTo=location.origin+location.pathname;
+    r=await S.db.auth.signUp({email,password,options:{emailRedirectTo:redirectTo}});
+   }else{
+    r=await S.db.auth.signInWithPassword({email,password});
+   }
+   if(r.error)throw r.error;
+   if(signup){
+    if(r.data.session&&r.data.user){
+     toast("Your YAPPER account is ready!");
+     startUser(r.data.user);
+    }else if(r.data.user){
+     $("auth-title").textContent="Check your email.";
+     if(muted)muted.textContent="We sent a confirmation link to "+email+". Open that email and confirm your address, then come back here to sign in.";
+     toast("Account created. Check your inbox to confirm your email.");
+    }else{
+     throw new Error("YAPPER did not return an account. Check whether new sign-ups are enabled in Supabase.");
+    }
+   }else if(r.data.user){
+    startUser(r.data.user);
+   }
+  }catch(e){
+   const message=err(e);
+   if(/signups? not allowed|signup is disabled|new user registration is disabled/i.test(message)){
+    toast("New accounts are disabled in Supabase. Enable 'Allow new users to sign up' in Authentication settings.");
+   }else if(/redirect.*not allowed|not whitelisted/i.test(message)){
+    toast("Add this site to Supabase Authentication → URL Configuration → Redirect URLs: "+location.origin+location.pathname);
+   }else{
+    toast(message);
+   }
+  }finally{
+   $("auth-submit").disabled=false;
+   $("auth-submit").textContent=signup?"Create account":"Sign in";
+  }
+ };
+}
 async function startUser(u){if(S.user?.id===u.id&&!$("app").classList.contains("hidden"))return;S.user=u;showApp()}
 async function loadServers(){let {data,error}=await S.db.from("server_members").select("server_id,servers(id,name,owner_id,created_at)").eq("user_id",S.user.id);if(error)throw error;S.servers=(data||[]).map(x=>x.servers).filter(Boolean);renderServers();if(S.servers.length){await selectServer(S.server&&S.servers.some(x=>x.id===S.server.id)?S.server.id:S.servers[0].id)}else{S.server=null;S.channels=[];S.channel=null;renderChannels();$("server-name").textContent="Pick a server";$("messages").innerHTML="";$("empty").classList.remove("hidden");$("empty").querySelector("h2").textContent="Welcome to YAPPER."; $("empty").querySelector("p").textContent="Create a server or join one to start chatting."; $("message-input").disabled=true;$("send").disabled=true;if($("emoji-toggle"))$("emoji-toggle").disabled=true}}
 function renderServers(){let root=$("servers");root.innerHTML="";S.servers.forEach(s=>{let b=document.createElement("button");b.className="server-pill"+(S.server?.id===s.id?" active":"");b.textContent=initial(s.name);b.title=s.name;b.onclick=()=>selectServer(s.id).catch(e=>toast(err(e)));root.append(b)})}
