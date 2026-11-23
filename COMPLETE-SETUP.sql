@@ -149,6 +149,22 @@ alter table public.direct_messages enable row level security;
 alter table public.voice_signals enable row level security;
 alter table public.message_reactions enable row level security;
 
+-- Explicit Data API table privileges for authenticated users; RLS below is the row-level gate.
+grant usage on schema public to authenticated;
+grant select,insert,update on public.profiles to authenticated;
+grant select,insert,update,delete on public.servers to authenticated;
+grant select,insert,delete on public.server_members to authenticated;
+grant select,insert on public.channels to authenticated;
+grant select,insert,update,delete on public.messages to authenticated;
+grant select,insert,update,delete on public.friendships to authenticated;
+grant select,insert,update on public.group_chats to authenticated;
+grant select,insert,delete on public.group_chat_members to authenticated;
+grant select,insert on public.group_chat_messages to authenticated;
+grant select,insert on public.direct_messages to authenticated;
+grant select,insert,delete on public.voice_signals to authenticated;
+grant select,insert,delete on public.message_reactions to authenticated;
+
+
 -- Remove legacy policies on these app tables before applying the known-safe policy set.
 -- This prevents older permissive policies from silently overriding the policies below.
 do $block$
