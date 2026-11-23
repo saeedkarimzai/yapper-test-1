@@ -151,13 +151,23 @@ alter table public.message_reactions enable row level security;
 
 -- Explicit Data API table privileges for authenticated users; RLS below is the row-level gate.
 grant usage on schema public to authenticated;
-grant select,insert,update on public.profiles to authenticated;
-grant select,insert,update,delete on public.servers to authenticated;
+grant select,insert on public.profiles to authenticated;
+revoke update on public.profiles from authenticated;
+grant update(username,avatar_url,updated_at) on public.profiles to authenticated;
+grant select,insert,delete on public.servers to authenticated;
+revoke update on public.servers from authenticated;
+grant update(name) on public.servers to authenticated;
 grant select,insert,delete on public.server_members to authenticated;
 grant select,insert on public.channels to authenticated;
-grant select,insert,update,delete on public.messages to authenticated;
-grant select,insert,update,delete on public.friendships to authenticated;
-grant select,insert,update on public.group_chats to authenticated;
+grant select,insert,delete on public.messages to authenticated;
+revoke update on public.messages from authenticated;
+grant update(content,edited_at) on public.messages to authenticated;
+grant select,insert,delete on public.friendships to authenticated;
+revoke update on public.friendships from authenticated;
+grant update(status,updated_at) on public.friendships to authenticated;
+grant select,insert on public.group_chats to authenticated;
+revoke update on public.group_chats from authenticated;
+grant update(name) on public.group_chats to authenticated;
 grant select,insert,delete on public.group_chat_members to authenticated;
 grant select,insert on public.group_chat_messages to authenticated;
 grant select,insert on public.direct_messages to authenticated;
@@ -252,7 +262,10 @@ create policy "owners update groups" on public.group_chats for update to authent
 drop policy if exists "members read group members" on public.group_chat_members;
 create policy "members read group members" on public.group_chat_members for select to authenticated using(private.yapper_is_group_member(group_id,(select auth.uid())) or private.yapper_is_group_owner(group_id,(select auth.uid())));
 drop policy if exists "owners add group members" on public.group_chat_members;
-create policy "owners add group members" on public.group_chat_members for insert to authenticated with check(private.yapper_is_group_owner(group_id,(select auth.uid())));
+create policy "owners add group members" on public.group_chat_members for insert to authenticated with check(
+  private.yapper_is_group_owner(group_id,(select auth.uid()))
+  and (user_id=(select auth.uid()) or private.yapper_are_friends((select auth.uid()),user_id))
+);
 drop policy if exists "owners remove group members" on public.group_chat_members;
 create policy "owners remove group members" on public.group_chat_members for delete to authenticated using(private.yapper_is_group_owner(group_id,(select auth.uid())) or user_id=(select auth.uid()));
 drop policy if exists "members read group messages" on public.group_chat_messages;
