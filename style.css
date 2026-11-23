@@ -212,3 +212,5 @@ footer{background:#232428;padding:9px 8px;gap:5px}
 .ceo-list{max-height:210px;overflow:auto;margin-bottom:14px}.ceo-row{display:flex;flex-direction:column;gap:3px;padding:8px;border-bottom:1px solid #2c2e39}.ceo-row b{font-size:11px}.ceo-row small,.ceo-announcement small{font-size:9px;color:#9296a8;overflow-wrap:anywhere}
 .ceo-announcement{padding:9px;margin:7px 0;background:#20212b;border-radius:8px}.ceo-announcement b{font-size:11px}.ceo-announcement p{white-space:pre-wrap;overflow-wrap:anywhere}.ceo-delete{float:right;background:#39252b;color:#ffb6bf;border:1px solid #65404a;border-radius:5px;padding:4px 7px;font-size:10px}
 @media(max-width:650px){.ceo-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.ceo-grid{grid-template-columns:1fr}.ceo-modal{padding:16px}}
+
+.test-bot-button{background:#263c4b!important;color:#b8e7ff!important;border:1px solid #426b84!important;border-radius:6px;padding:7px 10px;font-size:11px;font-weight:700}.test-bot-button:disabled{opacity:.45;cursor:not-allowed}
