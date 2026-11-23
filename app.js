@@ -9,11 +9,17 @@ function showAuth(){if(S.sub)S.db.removeChannel(S.sub);S.sub=null;setLiveStatus(
 function showApp(){ $("auth").classList.add("hidden");$("app").classList.remove("hidden");$("user-email").textContent=S.user.email||"Yapper";loadServers().catch(e=>toast(err(e)));const invite=new URLSearchParams(location.search).get("invite");if(invite){openModal("join");$("modal-input").value=invite;history.replaceState(null,"",location.pathname)}}
 function setupAuth(){
  const muted=document.querySelector(".auth-card .muted");
+ const emailLabel=$("email").previousElementSibling;
  const setMode=()=>{
   S.mode=S.mode==="signin"?"signup":"signin";
   const signup=S.mode==="signup";
   $("auth-title").textContent=signup?"Join YAPPER.":"Welcome back.";
-  if(muted)muted.textContent=signup?"Create your account with an email address and password.":"Sign in to your YAPPER account.";
+  if(muted)muted.textContent=signup?"Create your account with an email address and password.":"Sign in with your email or YAPPER username.";
+  if(emailLabel)emailLabel.textContent=signup?"Email":"Email or username";
+  $("email").type=signup?"email":"text";
+  $("email").placeholder=signup?"you@example.com":"Email or username";
+  $("email").autocomplete=signup?"email":"username";
+  $("email").required=true;
   $("auth-submit").textContent=signup?"Create account":"Sign in";
   $("switch-text").textContent=signup?"Already have an account?":"New to YAPPER?";
   $("switch").textContent=signup?"Sign in":"Create an account";
@@ -22,7 +28,7 @@ function setupAuth(){
  $("switch").onclick=setMode;
  $("auth-form").onsubmit=async e=>{
   e.preventDefault();
-  const email=$("email").value.trim();
+  const login=$("email").value.trim();
   const password=$("password").value;
   const signup=S.mode==="signup";
   $("auth-submit").disabled=true;
@@ -30,25 +36,36 @@ function setupAuth(){
   try{
    let r;
    if(signup){
+    if(!login.includes("@"))throw new Error("Enter a valid email address to create your account.");
     const redirectTo=location.origin+location.pathname;
-    r=await S.db.auth.signUp({email,password,options:{emailRedirectTo:redirectTo}});
-   }else{
-    r=await S.db.auth.signInWithPassword({email,password});
-   }
-   if(r.error)throw r.error;
-   if(signup){
+    r=await S.db.auth.signUp({email:login,password,options:{emailRedirectTo:redirectTo}});
+    if(r.error)throw r.error;
     if(r.data.session&&r.data.user){
      toast("Your YAPPER account is ready!");
      startUser(r.data.user);
     }else if(r.data.user){
      $("auth-title").textContent="Check your email.";
-     if(muted)muted.textContent="We sent a confirmation link to "+email+". Open that email and confirm your address, then come back here to sign in.";
+     if(muted)muted.textContent="We sent a confirmation link to "+login+". Open that email and confirm your address, then come back here to sign in.";
      toast("Account created. Check your inbox to confirm your email.");
     }else{
      throw new Error("YAPPER did not return an account. Check whether new sign-ups are enabled in Supabase.");
     }
-   }else if(r.data.user){
-    startUser(r.data.user);
+   }else if(login.includes("@")){
+    r=await S.db.auth.signInWithPassword({email:login,password});
+    if(r.error)throw r.error;
+    if(r.data.user)startUser(r.data.user);
+   }else{
+    const response=await fetch(SUPABASE_URL+"/functions/v1/username-login",{
+     method:"POST",
+     headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY},
+     body:JSON.stringify({username:login,password})
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result.error||"Username or password is incorrect.");
+    if(!result.access_token||!result.refresh_token)throw new Error("Username or password is incorrect.");
+    const session=await S.db.auth.setSession({access_token:result.access_token,refresh_token:result.refresh_token});
+    if(session.error)throw session.error;
+    if(session.data.user)startUser(session.data.user);
    }
   }catch(e){
    const message=err(e);
@@ -61,7 +78,7 @@ function setupAuth(){
    }
   }finally{
    $("auth-submit").disabled=false;
-   $("auth-submit").textContent=signup?"Create account":"Sign in";
+   $("auth-submit").textContent=S.mode==="signup"?"Create account":"Sign in";
   }
  };
 }
