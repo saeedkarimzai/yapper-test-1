@@ -151,7 +151,7 @@ alter table public.message_reactions enable row level security;
 
 -- Remove legacy policies on these app tables before applying the known-safe policy set.
 -- This prevents older permissive policies from silently overriding the policies below.
-do $
+do $block$
 declare p record;
 begin
   for p in
@@ -267,14 +267,14 @@ create policy "users remove own reactions" on public.message_reactions for delet
 -- Create profiles for new and existing auth users.
 create or replace function public.yapper_create_profile()
 returns trigger language plpgsql security definer set search_path = ''
-as $$
+as $profile$
 begin
   insert into public.profiles(id,username)
   values(new.id,'user_'||substr(new.id::text,1,8))
   on conflict(id) do nothing;
   return new;
 end;
-$;
+$profile$;
 revoke all on function public.yapper_create_profile() from public, anon, authenticated;
 drop trigger if exists yapper_create_profile_after_signup on auth.users;
 create trigger yapper_create_profile_after_signup after insert on auth.users
