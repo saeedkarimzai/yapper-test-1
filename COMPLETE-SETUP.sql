@@ -28,6 +28,16 @@ alter table public.server_members
   add column if not exists role text not null default 'member'
   check (role in ('owner','member'));
 
+create table if not exists public.server_invites (
+  id uuid primary key default gen_random_uuid(),
+  server_id uuid not null references public.servers(id) on delete cascade,
+  code text not null unique,
+  created_by uuid not null references auth.users(id) on delete cascade,
+  expires_at timestamptz,
+  max_uses integer check (max_uses is null or max_uses > 0),
+  uses integer not null default 0 check (uses >= 0),
+  created_at timestamptz not null default now()
+);
 create table if not exists public.channels (
   id uuid primary key default gen_random_uuid(),
   server_id uuid not null references public.servers(id) on delete cascade,
@@ -82,6 +92,7 @@ create index if not exists reactions_message_idx on public.message_reactions(mes
 create index if not exists message_reactions_user_id_idx on public.message_reactions(user_id);
 create index if not exists messages_user_id_idx on public.messages(user_id);
 create index if not exists servers_owner_id_idx on public.servers(owner_id);
+create index if not exists server_invites_server_id_idx on public.server_invites(server_id);
 
 -- Index old prototype tables only when they still exist.
 do $legacy_index$
@@ -110,21 +121,90 @@ returns boolean language sql stable security definer set search_path = ''
 as $$ select p_user_id=auth.uid() and exists(select 1 from public.server_members m where m.server_id=p_server_id and m.user_id=p_user_id); $$;
 create or replace function private.yapper_are_friends(p_user_a uuid,p_user_b uuid)
 returns boolean language sql stable security definer set search_path = ''
-as $$ select (p_user_a=auth.uid() or p_user_b=auth.uid()) and exists(select 1 from public.friendships f where f.status='accepted' and ((f.requester_id=p_user_a and f.addressee_id=p_user_b) or (f.requester_id=p_user_b and f.addressee_id=p_user_a))); $$;
-create or replace function private.yapper_server_exists(p_server_id uuid)
-returns boolean language sql stable security definer set search_path = ''
-as $$ select auth.uid() is not null and exists(select 1 from public.servers s where s.id=p_server_id); $$;
+as $ select (p_user_a=auth.uid() or p_user_b=auth.uid()) and exists(select 1 from public.friendships f where f.status='accepted' and ((f.requester_id=p_user_a and f.addressee_id=p_user_b) or (f.requester_id=p_user_b and f.addressee_id=p_user_a))); $;
+
+-- Invite operations run with elevated privileges, but only after validating the owner or invite code.
+create or replace function private.create_server_invite(
+  p_server_id uuid,
+  p_expires_at timestamptz default null,
+  p_max_uses integer default null
+) returns text
+language plpgsql security definer set search_path = ''
+as $invite$
+declare v_code text;
+begin
+  if auth.uid() is null then raise exception 'Sign in first.'; end if;
+  if p_max_uses is not null and p_max_uses < 1 then raise exception 'Invite use limit must be positive.'; end if;
+  if p_expires_at is not null and p_expires_at <= now() then raise exception 'Invite expiry must be in the future.'; end if;
+  if not exists(select 1 from public.servers s where s.id=p_server_id and s.owner_id=auth.uid()) then
+    raise exception 'Only the server owner can create invites.';
+  end if;
+  v_code := lower(replace(pg_catalog.gen_random_uuid()::text,'-',''));
+  insert into public.server_invites(server_id,code,created_by,expires_at,max_uses)
+  values(p_server_id,v_code,auth.uid(),p_expires_at,p_max_uses);
+  return v_code;
+end;
+$invite$;
+
+create or replace function private.join_server_by_invite(p_code text)
+returns uuid
+language plpgsql security definer set search_path = ''
+as $join$
+declare v_invite public.server_invites%rowtype; v_inserted integer;
+begin
+  if auth.uid() is null then raise exception 'Sign in first.'; end if;
+  select * into v_invite from public.server_invites
+  where code=lower(trim(p_code)) for update;
+  if not found then raise exception 'Invite code not found.'; end if;
+  if v_invite.expires_at is not null and v_invite.expires_at <= now() then raise exception 'This invite has expired.'; end if;
+  if v_invite.max_uses is not null and v_invite.uses >= v_invite.max_uses then raise exception 'This invite has reached its use limit.'; end if;
+  insert into public.server_members(server_id,user_id,role)
+  values(v_invite.server_id,auth.uid(),'member')
+  on conflict(server_id,user_id) do nothing;
+  get diagnostics v_inserted = row_count;
+  if v_inserted > 0 then
+    update public.server_invites set uses=uses+1 where id=v_invite.id;
+  end if;
+  return v_invite.server_id;
+end;
+$join$;
+
+revoke all on function private.create_server_invite(uuid,timestamptz,integer) from public,anon,authenticated;
+revoke all on function private.join_server_by_invite(text) from public,anon,authenticated;
+grant execute on function private.create_server_invite(uuid,timestamptz,integer) to authenticated;
+grant execute on function private.join_server_by_invite(text) to authenticated;
+
+create or replace function public.create_server_invite(
+  p_server_id uuid,
+  p_expires_at timestamptz default null,
+  p_max_uses integer default null
+) returns text
+language sql security invoker set search_path = ''
+as $wrapper$
+  select private.create_server_invite($1,$2,$3);
+$wrapper$;
+
+create or replace function public.join_server_by_invite(p_code text)
+returns uuid
+language sql security invoker set search_path = ''
+as $wrapper$
+  select private.join_server_by_invite($1);
+$wrapper$;
+
+revoke all on function public.create_server_invite(uuid,timestamptz,integer) from public,anon,authenticated;
+revoke all on function public.join_server_by_invite(text) from public,anon,authenticated;
+grant execute on function public.create_server_invite(uuid,timestamptz,integer) to authenticated;
+grant execute on function public.join_server_by_invite(text) to authenticated;
 
 revoke all on function private.yapper_is_server_member(uuid,uuid) from public,anon,authenticated;
 revoke all on function private.yapper_are_friends(uuid,uuid) from public,anon,authenticated;
-revoke all on function private.yapper_server_exists(uuid) from public,anon,authenticated;
 grant execute on function private.yapper_is_server_member(uuid,uuid) to authenticated;
 grant execute on function private.yapper_are_friends(uuid,uuid) to authenticated;
-grant execute on function private.yapper_server_exists(uuid) to authenticated;
 
 alter table public.profiles enable row level security;
 alter table public.servers enable row level security;
 alter table public.server_members enable row level security;
+alter table public.server_invites enable row level security;
 alter table public.channels enable row level security;
 alter table public.messages enable row level security;
 alter table public.friendships enable row level security;
@@ -149,6 +229,8 @@ revoke update on public.friendships from authenticated;
 grant update(status,updated_at) on public.friendships to authenticated;
 grant select,insert on public.direct_messages to authenticated;
 grant select,insert,delete on public.message_reactions to authenticated;
+
+revoke all on public.server_invites from public, anon, authenticated;
 
 -- Retired group-chat tables from an older prototype are not used by this client.
 -- Revoke direct Data API access if they exist.
@@ -189,6 +271,7 @@ begin
     where schemaname='public'
       and tablename = any(array[
         'profiles','servers','server_members','channels','messages','friendships',
+        'server_invites',
         'group_chats','group_chat_members','group_chat_messages','direct_messages',
         'voice_signals','message_reactions','group_conversations','group_members','group_messages'
       ])
@@ -220,6 +303,7 @@ drop policy if exists "users update own profile" on public.profiles;
 create policy "users update own profile" on public.profiles for update to authenticated using(id=(select auth.uid())) with check(id=(select auth.uid()));
 
 -- Servers and membership
+update public.server_members m set role='owner' from public.servers s where s.id=m.server_id and s.owner_id=m.user_id and m.role<>'owner';
 drop policy if exists "members can read servers" on public.servers;
 create policy "members can read servers" on public.servers for select to authenticated using(owner_id=(select auth.uid()) or private.yapper_is_server_member(id,(select auth.uid())));
 drop policy if exists "users create servers" on public.servers;
@@ -232,8 +316,8 @@ drop policy if exists "members can read memberships" on public.server_members;
 create policy "members can read memberships" on public.server_members for select to authenticated using(user_id=(select auth.uid()) or private.yapper_is_server_member(server_id,(select auth.uid())));
 drop policy if exists "owners add memberships" on public.server_members;
 create policy "owners add memberships" on public.server_members for insert to authenticated with check(
-  (user_id=(select auth.uid()) and role='owner' and exists(select 1 from public.servers s where s.id=server_id and s.owner_id=(select auth.uid())))
-  or (user_id=(select auth.uid()) and role='member' and private.yapper_server_exists(server_id))
+  user_id=(select auth.uid()) and role='owner'
+  and exists(select 1 from public.servers s where s.id=server_id and s.owner_id=(select auth.uid()))
 );
 drop policy if exists "users leave own membership" on public.server_members;
 create policy "users leave own membership" on public.server_members for delete to authenticated using(user_id=(select auth.uid()) and role<>'owner');
