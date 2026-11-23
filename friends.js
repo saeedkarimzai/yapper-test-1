@@ -129,6 +129,13 @@
     accepted.forEach(r => {
       const friendId = r.requester_id === currentUserId ? r.addressee_id : r.requester_id;
       friendsRoot.append(friendRow(profiles[friendId], "YAPPER friend", [
+        { label: "Message", className: "friend-action", action: () => {
+          const modal = $f("dm-modal"), input = $f("dm-username"), form = $f("dm-open-form");
+          if (!modal || !input || !form) return note("Private messages are unavailable.", true);
+          input.value = profiles[friendId]?.username || "";
+          if (!modal.open) modal.showModal();
+          form.requestSubmit();
+        }},
         { label: "Remove", className: "friend-action remove", action: async () => {
           if (!confirm("Remove " + (profiles[friendId]?.username || "this friend") + " from your friends?")) return;
           try {
