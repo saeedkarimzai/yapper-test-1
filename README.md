@@ -67,3 +67,15 @@ One-time setup:
 4. Refresh YAPPER. The GIF buttons in server chat and private DMs use the same server-side key.
 
 The Edge Function requires a signed-in Supabase session and requests PG-13-rated GIFs. If the secret is missing, GIF search returns a setup error. Selected GIF URLs are stored in the existing message content, so no database migration is required.
+
+## YAPPER Test Bot
+
+The **🤖 Test bot** button adds a dedicated authenticated bot account (`yapper_test_bot`) to the selected server. It is created automatically on first use by the `yapper-test-bot` Edge Function; the browser never receives the service-role key.
+
+Commands in a channel:
+- Mention `@yapper_test_bot` for a reply.
+- `!testbot help` shows available commands.
+- `!testbot ping` checks request/reply delivery.
+- `!testbot test` sends three real database messages with short pauses to exercise Realtime delivery.
+
+The function requires a signed-in user who is already a member of the selected server. It uses the Supabase Edge Function's server-side `SUPABASE_SERVICE_ROLE_KEY` environment variable to create and manage the dedicated bot identity. No SQL migration or manually created bot password is required.
