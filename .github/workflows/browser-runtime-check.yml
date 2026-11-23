@@ -33,6 +33,9 @@ jobs:
             await page.waitForTimeout(1500);
             if (!(await page.locator('#auth-submit').isVisible())) throw new Error('YAPPER sign-in form did not initialize.');
             if (!(await page.locator('#app').count())) throw new Error('YAPPER app shell is missing.');
+            if (!(await page.locator('#dm-modal').count())) throw new Error('Private message dialog is missing.');
+            if (!(await page.locator('#dm-open-form').count()) || !(await page.locator('#dm-message-form').count())) throw new Error('Private message forms are missing.');
+            if (await page.locator('#social-modal').count()) throw new Error('Retired group/voice modal is still present.');
             if (errors.length) throw new Error(errors.join('\n'));
             await browser.close();
             console.log('Passed: browser UI initialized.');
