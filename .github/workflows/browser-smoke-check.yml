@@ -1,0 +1,76 @@
+name: Browser smoke checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  static-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check HTML entry points, local assets, and JavaScript syntax
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import os from 'node:os';
+          import { spawnSync } from 'node:child_process';
+
+          const root = process.cwd();
+          const ignored = new Set(['.git', 'node_modules', '.next', 'dist', 'build']);
+          const files = [];
+          function walk(dir) {
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              if (ignored.has(entry.name)) continue;
+              const full = path.join(dir, entry.name);
+              if (entry.isDirectory()) walk(full);
+              else files.push(full);
+            }
+          }
+          walk(root);
+          const htmlFiles = files.filter(f => f.toLowerCase().endsWith('.html'));
+          const jsFiles = files.filter(f => /\.(?:js|mjs|cjs)$/i.test(f));
+          const errors = [];
+          if (!htmlFiles.length) errors.push('No HTML entry point found.');
+
+          function checkJs(source, label) {
+            const temp = path.join(os.tmpdir(), 'repo-check-' + Math.random().toString(36).slice(2) + '.mjs');
+            fs.writeFileSync(temp, source);
+            const result = spawnSync(process.execPath, ['--check', temp], { encoding: 'utf8' });
+            fs.rmSync(temp, { force: true });
+            if (result.status !== 0) errors.push(label + ': ' + (result.stderr || result.stdout).trim());
+          }
+          function isRemote(value) {
+            return /^(?:https?:)?\/\//i.test(value) || /^(?:data:|blob:|javascript:|mailto:|tel:|#)/i.test(value);
+          }
+          for (const file of htmlFiles) {
+            const source = fs.readFileSync(file, 'utf8');
+            const externalBase = /<base\b[^>]*href\s*=\s*["']https?:\/\//i.test(source);
+            const refs = /\b(?:src|href)\s*=\s*["']([^"']+)["']/gi;
+            for (const match of source.matchAll(refs)) {
+              const value = match[1].trim();
+              if (!value || isRemote(value) || externalBase) continue;
+              const clean = decodeURIComponent(value.split(/[?#]/)[0]);
+              if (!clean) continue;
+              const target = clean.startsWith('/') ? path.join(root, clean.slice(1)) : path.resolve(path.dirname(file), clean);
+              if (!fs.existsSync(target)) errors.push(path.relative(root, file) + ': missing local asset ' + value);
+            }
+            const scripts = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
+            for (const match of source.matchAll(scripts)) {
+              const attrs = match[1];
+              const body = match[2].trim();
+              if (/\bsrc\s*=/.test(attrs) || !body || /type\s*=\s*["'](?:application\/json|importmap)["']/i.test(attrs)) continue;
+              checkJs(body, path.relative(root, file) + ' inline script');
+            }
+          }
+          for (const file of jsFiles) checkJs(fs.readFileSync(file, 'utf8'), path.relative(root, file));
+          if (errors.length) {
+            console.error(errors.join('\n\n'));
+            process.exit(1);
+          }
+          console.log('Passed: ' + htmlFiles.length + ' HTML file(s), ' + jsFiles.length + ' JavaScript file(s).');
+          NODE
