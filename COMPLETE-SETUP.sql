@@ -398,6 +398,17 @@ create policy "users update their own avatars" on storage.objects for update to 
 drop policy if exists "users delete their own avatars" on storage.objects;
 create policy "users delete their own avatars" on storage.objects for delete to authenticated using(bucket_id='yapper-avatars' and (storage.foldername(name))[1]=(select auth.uid())::text);
 
+-- Remove retired prototype feeds; the current app uses one-to-one DMs only.
+do $$
+declare v_table text;
+begin
+  foreach v_table in array array['group_chat_members','group_chat_messages','group_messages','voice_signals'] loop
+    if exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename=v_table) then
+      execute format('alter publication supabase_realtime drop table public.%I',v_table);
+    end if;
+  end loop;
+end $$;
+
 -- Realtime feeds used by the client.
 do $$
 begin
