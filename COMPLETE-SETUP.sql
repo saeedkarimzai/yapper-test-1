@@ -145,6 +145,25 @@ alter table public.direct_messages enable row level security;
 alter table public.voice_signals enable row level security;
 alter table public.message_reactions enable row level security;
 
+-- Remove legacy policies on these app tables before applying the known-safe policy set.
+-- This prevents older permissive policies from silently overriding the policies below.
+do $
+declare p record;
+begin
+  for p in
+    select schemaname, tablename, policyname
+    from pg_policies
+    where schemaname='public'
+      and tablename = any(array[
+        'profiles','servers','server_members','channels','messages','friendships',
+        'group_chats','group_chat_members','group_chat_messages','direct_messages',
+        'voice_signals','message_reactions'
+      ])
+  loop
+    execute format('drop policy if exists %I on %I.%I',p.policyname,p.schemaname,p.tablename);
+  end loop;
+end $;
+
 -- Profiles
 drop policy if exists "profiles readable by signed in users" on public.profiles;
 create policy "profiles readable by signed in users" on public.profiles for select to authenticated using(true);
