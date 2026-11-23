@@ -304,6 +304,7 @@ create policy "users update own profile" on public.profiles for update to authen
 
 -- Servers and membership
 update public.server_members m set role='owner' from public.servers s where s.id=m.server_id and s.owner_id=m.user_id and m.role<>'owner';
+insert into public.server_members(server_id,user_id,role) select s.id,s.owner_id,'owner' from public.servers s on conflict(server_id,user_id) do update set role='owner';
 drop policy if exists "members can read servers" on public.servers;
 create policy "members can read servers" on public.servers for select to authenticated using(owner_id=(select auth.uid()) or private.yapper_is_server_member(id,(select auth.uid())));
 drop policy if exists "users create servers" on public.servers;
