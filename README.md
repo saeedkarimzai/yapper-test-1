@@ -1,5 +1,8 @@
 # YAPPER
 
+**Live site:** https://saeedkarimzai.github.io/yapper-test-1/
+
+
 A Discord-inspired browser chat app built with HTML, CSS, JavaScript, and Supabase. No Node.js or build step is required.
 
 ## Features in this repository
@@ -47,3 +50,8 @@ Voice calls require HTTPS, microphone permission, and both users to be online. T
 - **Voice does not connect:** verify microphone permission and test on a network that permits WebRTC. A TURN server may be required.
 
 GitHub Pages is public. Never commit passwords, service-role keys, private TURN credentials, or other secrets.
+
+
+## Domain note
+
+The old `yapper.chat` custom-domain mapping was removed because that domain resolves to an unrelated Yapper business. Use the GitHub Pages URL above unless you configure a domain you own with the required DNS records.
