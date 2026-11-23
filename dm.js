@@ -15,11 +15,12 @@
       const meta=document.createElement("div");meta.className="social-message-meta";
       const author=document.createElement("b");author.textContent=m.sender_id===userId?"You":(names[m.sender_id]||"Friend");
       const time=document.createElement("time");time.textContent=new Date(m.created_at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
-      const body=document.createElement("p");body.textContent=m.content;
+      const body=document.createElement("div");body.className="dm-message-content";if(window.yapperRenderContent)window.yapperRenderContent(body,m.content,"dm");else body.textContent=m.content;
       meta.append(author,time);article.append(meta,body);root.append(article);
     }
     root.scrollTop=root.scrollHeight;
   }
+  window.yapperDmSendGif=async function(url){if(!userId||!peerId)throw Error("Open a private chat first.");const content="[[GIF:"+url+"]]";const r=await S.db.from("direct_messages").insert({sender_id:userId,recipient_id:peerId,content}).select("id,sender_id,recipient_id,content,created_at").single();if(r.error)throw r.error;await render([r.data],true);};
   async function openChat(e){
     e.preventDefault();
     if(!userId)return note("Sign in first.",true);
