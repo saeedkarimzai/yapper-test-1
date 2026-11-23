@@ -54,25 +54,6 @@ create table if not exists public.friendships (
 );
 create unique index if not exists friendships_pair_unique
 on public.friendships(least(requester_id,addressee_id),greatest(requester_id,addressee_id));
-create table if not exists public.group_chats (
-  id uuid primary key default gen_random_uuid(),
-  name text not null check (char_length(name) between 1 and 60),
-  owner_id uuid not null references auth.users(id) on delete cascade,
-  created_at timestamptz not null default now()
-);
-create table if not exists public.group_chat_members (
-  group_id uuid not null references public.group_chats(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  created_at timestamptz not null default now(),
-  primary key(group_id,user_id)
-);
-create table if not exists public.group_chat_messages (
-  id uuid primary key default gen_random_uuid(),
-  group_id uuid not null references public.group_chats(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  content text not null check (char_length(content) between 1 and 2000),
-  created_at timestamptz not null default now()
-);
 create table if not exists public.direct_messages (
   id uuid primary key default gen_random_uuid(),
   sender_id uuid not null references auth.users(id) on delete cascade,
@@ -80,14 +61,6 @@ create table if not exists public.direct_messages (
   content text not null check (char_length(content) between 1 and 2000),
   created_at timestamptz not null default now(),
   check(sender_id <> recipient_id)
-);
-create table if not exists public.voice_signals (
-  id uuid primary key default gen_random_uuid(),
-  room_id text not null,
-  sender_id uuid not null references auth.users(id) on delete cascade,
-  recipient_id uuid not null references auth.users(id) on delete cascade,
-  signal jsonb not null,
-  created_at timestamptz not null default now()
 );
 create table if not exists public.message_reactions (
   id uuid primary key default gen_random_uuid(),
@@ -104,25 +77,17 @@ create index if not exists messages_channel_created_idx on public.messages(chann
 create index if not exists friendships_requester_status on public.friendships(requester_id,status);
 create index if not exists friendships_addressee_status on public.friendships(addressee_id,status);
 create unique index if not exists friendships_one_pair on public.friendships(least(requester_id,addressee_id),greatest(requester_id,addressee_id));
-create index if not exists group_members_user_idx on public.group_chat_members(user_id);
-create index if not exists group_messages_created_idx on public.group_chat_messages(group_id,created_at);
 create index if not exists dm_pair_created_idx on public.direct_messages(sender_id,recipient_id,created_at);
-create index if not exists voice_signals_recipient_idx on public.voice_signals(recipient_id,created_at);
 create index if not exists reactions_message_idx on public.message_reactions(message_id);
-create index if not exists group_chat_messages_user_id_idx on public.group_chat_messages(user_id);
-create index if not exists group_chats_owner_id_idx on public.group_chats(owner_id);
 create index if not exists message_reactions_user_id_idx on public.message_reactions(user_id);
 create index if not exists messages_user_id_idx on public.messages(user_id);
 create index if not exists servers_owner_id_idx on public.servers(owner_id);
-create index if not exists voice_signals_sender_id_idx on public.voice_signals(sender_id);
 
 -- Index old prototype tables only when they still exist.
 do $legacy_index$
 begin
   if to_regclass('public.group_conversations') is not null then
     execute 'create index if not exists group_conversations_owner_id_idx on public.group_conversations(owner_id)';
-  end if;
-  if to_regclass('public.group_members') is not null then
   end if;
   if to_regclass('public.group_messages') is not null then
     execute 'create index if not exists group_messages_user_id_idx on public.group_messages(user_id)';
@@ -143,12 +108,6 @@ grant usage on schema private to authenticated;
 create or replace function private.yapper_is_server_member(p_server_id uuid,p_user_id uuid)
 returns boolean language sql stable security definer set search_path = ''
 as $$ select p_user_id=auth.uid() and exists(select 1 from public.server_members m where m.server_id=p_server_id and m.user_id=p_user_id); $$;
-create or replace function private.yapper_is_group_member(p_group_id uuid,p_user_id uuid)
-returns boolean language sql stable security definer set search_path = ''
-as $$ select p_user_id=auth.uid() and exists(select 1 from public.group_chat_members m where m.group_id=p_group_id and m.user_id=p_user_id); $$;
-create or replace function private.yapper_is_group_owner(p_group_id uuid,p_user_id uuid)
-returns boolean language sql stable security definer set search_path = ''
-as $$ select p_user_id=auth.uid() and exists(select 1 from public.group_chats g where g.id=p_group_id and g.owner_id=p_user_id); $$;
 create or replace function private.yapper_are_friends(p_user_a uuid,p_user_b uuid)
 returns boolean language sql stable security definer set search_path = ''
 as $$ select (p_user_a=auth.uid() or p_user_b=auth.uid()) and exists(select 1 from public.friendships f where f.status='accepted' and ((f.requester_id=p_user_a and f.addressee_id=p_user_b) or (f.requester_id=p_user_b and f.addressee_id=p_user_a))); $$;
@@ -157,13 +116,9 @@ returns boolean language sql stable security definer set search_path = ''
 as $$ select auth.uid() is not null and exists(select 1 from public.servers s where s.id=p_server_id); $$;
 
 revoke all on function private.yapper_is_server_member(uuid,uuid) from public,anon,authenticated;
-revoke all on function private.yapper_is_group_member(uuid,uuid) from public,anon,authenticated;
-revoke all on function private.yapper_is_group_owner(uuid,uuid) from public,anon,authenticated;
 revoke all on function private.yapper_are_friends(uuid,uuid) from public,anon,authenticated;
 revoke all on function private.yapper_server_exists(uuid) from public,anon,authenticated;
 grant execute on function private.yapper_is_server_member(uuid,uuid) to authenticated;
-grant execute on function private.yapper_is_group_member(uuid,uuid) to authenticated;
-grant execute on function private.yapper_is_group_owner(uuid,uuid) to authenticated;
 grant execute on function private.yapper_are_friends(uuid,uuid) to authenticated;
 grant execute on function private.yapper_server_exists(uuid) to authenticated;
 
@@ -173,11 +128,7 @@ alter table public.server_members enable row level security;
 alter table public.channels enable row level security;
 alter table public.messages enable row level security;
 alter table public.friendships enable row level security;
-alter table public.group_chats enable row level security;
-alter table public.group_chat_members enable row level security;
-alter table public.group_chat_messages enable row level security;
 alter table public.direct_messages enable row level security;
-alter table public.voice_signals enable row level security;
 alter table public.message_reactions enable row level security;
 
 -- Explicit Data API table privileges for authenticated users; RLS below is the row-level gate.
@@ -196,13 +147,7 @@ grant update(content,edited_at) on public.messages to authenticated;
 grant select,insert,delete on public.friendships to authenticated;
 revoke update on public.friendships from authenticated;
 grant update(status,updated_at) on public.friendships to authenticated;
-grant select,insert on public.group_chats to authenticated;
-revoke update on public.group_chats from authenticated;
-grant update(name) on public.group_chats to authenticated;
-grant select,insert,delete on public.group_chat_members to authenticated;
-grant select,insert on public.group_chat_messages to authenticated;
 grant select,insert on public.direct_messages to authenticated;
-grant select,insert,delete on public.voice_signals to authenticated;
 grant select,insert,delete on public.message_reactions to authenticated;
 
 -- Retired group-chat tables from an older prototype are not used by this client.
@@ -217,6 +162,18 @@ begin
   end if;
   if to_regclass('public.group_messages') is not null then
     execute 'revoke all on public.group_messages from anon, authenticated';
+  end if;
+  if to_regclass('public.group_chats') is not null then
+    execute 'revoke all on public.group_chats from anon, authenticated';
+  end if;
+  if to_regclass('public.group_chat_members') is not null then
+    execute 'revoke all on public.group_chat_members from anon, authenticated';
+  end if;
+  if to_regclass('public.group_chat_messages') is not null then
+    execute 'revoke all on public.group_chat_messages from anon, authenticated';
+  end if;
+  if to_regclass('public.voice_signals') is not null then
+    execute 'revoke all on public.voice_signals from anon, authenticated';
   end if;
 end $legacy$;
 
@@ -305,38 +262,11 @@ create policy "recipients respond to requests" on public.friendships for update 
 drop policy if exists "participants remove friendships" on public.friendships;
 create policy "participants remove friendships" on public.friendships for delete to authenticated using(requester_id=(select auth.uid()) or addressee_id=(select auth.uid()));
 
--- Group chats
-drop policy if exists "members read groups" on public.group_chats;
-create policy "members read groups" on public.group_chats for select to authenticated using(owner_id=(select auth.uid()) or private.yapper_is_group_member(id,(select auth.uid())));
-drop policy if exists "users create groups" on public.group_chats;
-create policy "users create groups" on public.group_chats for insert to authenticated with check(owner_id=(select auth.uid()));
-drop policy if exists "owners update groups" on public.group_chats;
-create policy "owners update groups" on public.group_chats for update to authenticated using(owner_id=(select auth.uid())) with check(owner_id=(select auth.uid()));
-drop policy if exists "members read group members" on public.group_chat_members;
-create policy "members read group members" on public.group_chat_members for select to authenticated using(private.yapper_is_group_member(group_id,(select auth.uid())) or private.yapper_is_group_owner(group_id,(select auth.uid())));
-drop policy if exists "owners add group members" on public.group_chat_members;
-create policy "owners add group members" on public.group_chat_members for insert to authenticated with check(
-  private.yapper_is_group_owner(group_id,(select auth.uid()))
-  and (user_id=(select auth.uid()) or private.yapper_are_friends((select auth.uid()),user_id))
-);
-drop policy if exists "owners remove group members" on public.group_chat_members;
-create policy "owners remove group members" on public.group_chat_members for delete to authenticated using(private.yapper_is_group_owner(group_id,(select auth.uid())) or user_id=(select auth.uid()));
-drop policy if exists "members read group messages" on public.group_chat_messages;
-create policy "members read group messages" on public.group_chat_messages for select to authenticated using(private.yapper_is_group_member(group_id,(select auth.uid())));
-drop policy if exists "members send group messages" on public.group_chat_messages;
-create policy "members send group messages" on public.group_chat_messages for insert to authenticated with check(user_id=(select auth.uid()) and private.yapper_is_group_member(group_id,(select auth.uid())));
-
--- Direct messages and one-to-one voice signaling: accepted friends only.
+-- Direct messages: accepted friends only.
 drop policy if exists "friends read direct messages" on public.direct_messages;
 create policy "friends read direct messages" on public.direct_messages for select to authenticated using((sender_id=(select auth.uid()) or recipient_id=(select auth.uid())) and private.yapper_are_friends(sender_id,recipient_id));
 drop policy if exists "friends send direct messages" on public.direct_messages;
 create policy "friends send direct messages" on public.direct_messages for insert to authenticated with check(sender_id=(select auth.uid()) and private.yapper_are_friends(sender_id,recipient_id));
-drop policy if exists "participants create voice signals" on public.voice_signals;
-create policy "participants create voice signals" on public.voice_signals for insert to authenticated with check(sender_id=(select auth.uid()) and private.yapper_are_friends(sender_id,recipient_id));
-drop policy if exists "call participants read voice signals" on public.voice_signals;
-create policy "call participants read voice signals" on public.voice_signals for select to authenticated using(sender_id=(select auth.uid()) or recipient_id=(select auth.uid()));
-drop policy if exists "call participants delete voice signals" on public.voice_signals;
-create policy "call participants delete voice signals" on public.voice_signals for delete to authenticated using(sender_id=(select auth.uid()) or recipient_id=(select auth.uid()));
 
 -- Reactions
 drop policy if exists "members read reactions" on public.message_reactions;
@@ -391,22 +321,7 @@ exception when duplicate_object then null; when undefined_object then null;
 end $$;
 do $$
 begin
-  alter publication supabase_realtime add table public.group_chat_members;
-exception when duplicate_object then null; when undefined_object then null;
-end $$;
-do $$
-begin
-  alter publication supabase_realtime add table public.group_chat_messages;
-exception when duplicate_object then null; when undefined_object then null;
-end $$;
-do $$
-begin
   alter publication supabase_realtime add table public.direct_messages;
-exception when duplicate_object then null; when undefined_object then null;
-end $$;
-do $$
-begin
-  alter publication supabase_realtime add table public.voice_signals;
 exception when duplicate_object then null; when undefined_object then null;
 end $$;
 do $$
