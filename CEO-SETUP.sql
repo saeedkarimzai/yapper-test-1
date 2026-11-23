@@ -20,6 +20,7 @@ as $$
  select exists(select 1 from public.admin_users where user_id=(select auth.uid()));
 $$;
 revoke all on function private.yapper_is_ceo() from public,anon,authenticated;
+grant execute on function private.yapper_is_ceo() to authenticated;
 
 drop policy if exists "ceo can view all servers" on public.servers;
 create policy "ceo can view all servers" on public.servers for select to authenticated using(private.yapper_is_ceo());
