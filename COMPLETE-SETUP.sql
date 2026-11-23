@@ -123,7 +123,6 @@ begin
     execute 'create index if not exists group_conversations_owner_id_idx on public.group_conversations(owner_id)';
   end if;
   if to_regclass('public.group_members') is not null then
-    execute 'create index if not exists group_members_user_id_idx on public.group_members(user_id)';
   end if;
   if to_regclass('public.group_messages') is not null then
     execute 'create index if not exists group_messages_user_id_idx on public.group_messages(user_id)';
