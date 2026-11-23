@@ -4,10 +4,10 @@
   const $=id=>document.getElementById(id);
   function status(picker,message){const el=picker.querySelector("[data-gif-status]");if(el)el.textContent=message;}
   function renderContent(target,content,kind){
-    const match=String(content||"").match(/^\\[\\[GIF:(https:\\/\\/[^\\]]+)\\]\\]$/);
-    if(!match){target.textContent=content||"";return;}
-    let url;try{url=new URL(match[1]);}catch{target.textContent=content;return;}
-    if(!/^(media\\d*|i)\\.giphy\\.com$/.test(url.hostname)){target.textContent=content;return;}
+    const raw=String(content||"");
+    if(!raw.startsWith("[[GIF:")||!raw.endsWith("]]")){target.textContent=raw;return;}
+    let url;try{url=new URL(raw.slice(6,-2));}catch{target.textContent=raw;return;}
+    if(!(url.hostname==="i.giphy.com"||(url.hostname.startsWith("media")&&url.hostname.endsWith(".giphy.com")))){target.textContent=raw;return;}
     const img=document.createElement("img");img.src=url.href;img.alt="GIF";img.loading="lazy";img.referrerPolicy="no-referrer";img.className=kind==="dm"?"dm-message-gif":"message-gif";
     img.onerror=()=>img.replaceWith(document.createTextNode("GIF could not be loaded."));
     target.append(img);
