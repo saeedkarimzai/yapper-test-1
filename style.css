@@ -200,3 +200,15 @@ footer{background:#232428;padding:9px 8px;gap:5px}
 
 /* Private-message typing indicator */
 .dm-typing-indicator{padding-left:10px;padding-right:10px}.dm-typing-indicator.visible{min-height:22px;padding-top:4px}
+
+/* CEO control panel */
+#open-ceo{background:#382d55;border-color:#66518e;color:#e2d8ff}
+.ceo-modal{width:min(96vw,980px);max-height:92vh;overflow:auto}
+.ceo-feedback{font-size:11px;color:#b8a8ff;min-height:18px;margin:10px 0}.ceo-feedback.error{color:#ff9da8}
+.ceo-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:14px 0}
+.ceo-stat{background:#20212b;border:1px solid #393b49;border-radius:9px;padding:13px}.ceo-stat small{display:block;color:#9b9eaf;font-size:10px}.ceo-stat b{display:block;font-size:23px;margin-top:5px}
+.ceo-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.ceo-section{background:#14151c;border:1px solid #333542;border-radius:10px;padding:13px;min-width:0}
+.ceo-section h3{font-size:13px;margin:4px 0 10px}.ceo-section label{display:block;font-size:11px;margin:10px 0 5px}.ceo-section input,.ceo-section textarea{box-sizing:border-box;width:100%;background:#101116;border:1px solid #363846;border-radius:7px;color:white;padding:10px}.ceo-section textarea{min-height:90px;resize:vertical}.ceo-section .primary{margin-top:9px;padding:9px 14px}
+.ceo-list{max-height:210px;overflow:auto;margin-bottom:14px}.ceo-row{display:flex;flex-direction:column;gap:3px;padding:8px;border-bottom:1px solid #2c2e39}.ceo-row b{font-size:11px}.ceo-row small,.ceo-announcement small{font-size:9px;color:#9296a8;overflow-wrap:anywhere}
+.ceo-announcement{padding:9px;margin:7px 0;background:#20212b;border-radius:8px}.ceo-announcement b{font-size:11px}.ceo-announcement p{white-space:pre-wrap;overflow-wrap:anywhere}.ceo-delete{float:right;background:#39252b;color:#ffb6bf;border:1px solid #65404a;border-radius:5px;padding:4px 7px;font-size:10px}
+@media(max-width:650px){.ceo-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.ceo-grid{grid-template-columns:1fr}.ceo-modal{padding:16px}}
