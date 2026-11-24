@@ -50,8 +50,11 @@
   else if(!query){for(const section of settingsSections)section.hidden=false;tabbar.querySelectorAll("button").forEach(b=>b.hidden=false);activateSettingsTab("display");}
  });
  search.addEventListener("keydown",event=>{if(event.key==="Escape"){search.value="";search.dispatchEvent(new Event("input"));}});
- dialog.insertBefore(intro,settingsSections[0]);
- dialog.insertBefore(search,settingsSections[0]);
+ const settingsFooter=dialog.querySelector(".modal-actions");
+ dialog.insertBefore(intro,settingsFooter);
+ dialog.insertBefore(search,settingsFooter);
+ dialog.insertBefore(tabbar,settingsFooter);
+ dialog.insertBefore(tabContent,settingsFooter);
  dialog.insertBefore(tabbar,settingsSections[0]);
  dialog.insertBefore(tabContent,settingsSections[0]);
  activateSettingsTab("display");
