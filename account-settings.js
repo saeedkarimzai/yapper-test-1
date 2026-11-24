@@ -3,6 +3,46 @@
  const $=id=>document.getElementById(id);
  const open=$("open-account-settings"),dialog=$("account-settings-modal");
  if(!open||!dialog)return;
+
+ // Turn the long settings page into a simple tabbed control panel.
+ const settingsSections=[...dialog.querySelectorAll(".account-settings-section,.account-settings-danger")];
+ const tabDefinitions=[
+  {id:"display",label:"🎨 Display",match:["Account information","Appearance","Chat layout"]},
+  {id:"alerts",label:"🔔 Notifications",match:["Notifications"]},
+  {id:"access",label:"♿ Accessibility",match:["Accessibility"]},
+  {id:"security",label:"🔒 Account & privacy",match:["Privacy & session","Change email","Change password","Session"]}
+ ];
+ const tabbar=document.createElement("nav");
+ tabbar.className="settings-tabs";tabbar.setAttribute("aria-label","Settings sections");
+ const tabContent=document.createElement("div");tabContent.className="settings-tab-content";
+ const tabPanels={};
+ for(const def of tabDefinitions){
+  const button=document.createElement("button");button.type="button";button.textContent=def.label;
+  button.dataset.settingsTab=def.id;button.setAttribute("aria-controls","settings-panel-"+def.id);
+  button.addEventListener("click",()=>activateSettingsTab(def.id));
+  tabbar.append(button);
+  const panel=document.createElement("div");panel.className="settings-tab-panel";panel.id="settings-panel-"+def.id;
+  panel.hidden=true;tabContent.append(panel);tabPanels[def.id]=panel;
+ }
+ function activateSettingsTab(id){
+  for(const def of tabDefinitions){
+   const active=def.id===id,button=tabbar.querySelector('[data-settings-tab="'+def.id+'"]');
+   button.classList.toggle("active",active);button.setAttribute("aria-selected",String(active));
+   tabPanels[def.id].hidden=!active;
+  }
+ }
+ for(const section of settingsSections){
+  const heading=section.querySelector("h3")?.textContent||"";
+  const def=tabDefinitions.find(t=>t.match.some(m=>heading.includes(m)))||tabDefinitions[0];
+  tabPanels[def.id].append(section);
+ }
+ const intro=document.createElement("p");intro.className="settings-hint";
+ intro.textContent="Choose a section below. Changes save automatically on this device.";
+ dialog.insertBefore(intro,settingsSections[0]);
+ dialog.insertBefore(tabbar,settingsSections[0]);
+ dialog.insertBefore(tabContent,settingsSections[0]);
+ activateSettingsTab("display");
+
  const status=$("account-settings-status");
  const PREF_KEY="yapper-app-preferences-v1";
  const defaults={
