@@ -305,3 +305,17 @@ html.yapper-reduced-motion *,html.yapper-reduced-motion *::before,html.yapper-re
 
 /* Simple, tabbed settings interface */
 .account-settings-modal{width:min(94vw,720px);padding:22px}.account-settings-modal>h2{margin:7px 0}.settings-hint{font-size:12px;color:var(--muted);margin:5px 0 14px}.settings-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;position:sticky;top:-22px;z-index:5;padding:10px 0;background:#191a22;border-bottom:1px solid var(--line)}.settings-tabs button{min-height:42px;border:1px solid #393b48;border-radius:9px;background:#242630;color:#c9cbda;font-size:11px;font-weight:700;padding:8px 5px}.settings-tabs button.active{background:#3a3158;border-color:var(--purple);color:#fff}.settings-tab-panel[hidden]{display:none!important}.settings-tab-panel{padding-top:5px}.settings-tab-panel .account-settings-section,.settings-tab-panel .account-settings-danger{margin:10px 0;padding:16px;border-radius:12px}.settings-tab-panel .account-settings-section h3,.settings-tab-panel .account-settings-danger h3{font-size:14px;margin-bottom:13px}.settings-tab-panel .account-setting-check{padding:9px 10px;margin:5px 0!important;border:1px solid #343642;border-radius:8px;background:#20212a}.settings-tab-panel .account-setting-check input{width:17px!important;height:17px}@media(max-width:520px){.account-settings-modal{padding:15px}.settings-tabs{grid-template-columns:repeat(2,minmax(0,1fr));top:-15px}.settings-tabs button{font-size:12px}}html[data-theme=light] .settings-tabs{background:#f8f9fd}html[data-theme=light] .settings-tabs button{background:#e8eaf3;color:#242638}html[data-theme=light] .settings-tabs button.active{background:#ded5ff;color:#30234d;border-color:#8c70dc}html[data-theme=light] .settings-tab-panel .account-setting-check{background:#fff;border-color:#d3d6e2}
+
+/* Settings search and clearer controls */
+.settings-search{display:block;width:100%;box-sizing:border-box;margin:0 0 12px;padding:12px 14px;border:1px solid #454052;border-radius:10px;background:#111219;color:#f5f4fb;font-size:13px}
+.settings-search:focus{outline:2px solid var(--purple);outline-offset:1px}
+.settings-search::placeholder{color:#85899a}
+.settings-tabs button[hidden]{display:none}
+.settings-tabs button{white-space:normal;line-height:1.25}
+.settings-tab-panel .account-settings-section h3{display:flex;align-items:center;gap:8px}
+.settings-tab-panel .account-settings-section label:not(.account-setting-check){font-weight:600}
+.settings-tab-panel .account-settings-section select{cursor:pointer}
+.settings-tab-panel .account-settings-section button:hover{filter:brightness(1.16)}
+.settings-tab-panel .account-settings-danger{padding:16px}
+html[data-theme="light"] .settings-search{background:#fff;color:#242638;border-color:#c7cad8}
+html[data-theme="light"] .settings-search::placeholder{color:#777d90}
