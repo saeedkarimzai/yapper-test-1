@@ -270,3 +270,35 @@ html.yapper-hide-members .right{display:none}
 @media(max-width:620px){.account-settings-nav{width:31px;height:31px;flex-basis:31px}}
 
 .message-text,.dm-message-content{font-size:var(--yapper-message-size,13px)}
+
+
+/* Expanded settings controls */
+.account-settings-modal{width:min(94vw,650px)}
+.account-settings-section input[type=range]{width:100%;accent-color:var(--purple);padding:0;border:0;background:transparent}
+.account-settings-section input[type=checkbox]{accent-color:var(--purple)}
+.account-setting-control{width:100%;padding:10px;background:#101116;border:1px solid #363846;border-radius:7px;color:white}
+.account-settings-section label{display:block;font-size:11px;margin:12px 0 6px}
+.account-setting-check{display:flex!important;align-items:center;gap:9px;margin:11px 0!important;font-weight:500!important}
+.account-setting-check input{width:auto!important;margin:0;flex:0 0 auto}
+#setting-font-value,#setting-line-value,#setting-width-value{float:right;color:#b9a8ff}
+.account-settings-section button{margin:8px 7px 0 0;padding:8px 11px;border:1px solid #484a57;border-radius:6px;background:#30323a;color:#e6e6ee;font-size:11px}
+html.yapper-hide-avatars .message>.avatar{display:none}
+html.yapper-hide-timestamps .message .meta time{display:none}
+html.yapper-hide-typing #typing-indicator,html.yapper-hide-typing #dm-typing-indicator{display:none!important}
+html.yapper-hide-gifs #gif-toggle,html.yapper-hide-gifs #dm-gif-toggle{display:none!important}
+html.yapper-compact-sidebar .app{grid-template-columns:56px 190px minmax(260px,1fr) 200px}
+html.yapper-compact-sidebar .side header{padding-left:12px;padding-right:10px}
+html.yapper-compact-sidebar .actions{gap:4px;padding:9px}
+html.yapper-compact-sidebar .actions button{padding:6px 5px;font-size:10px}
+html.yapper-compact-sidebar .messages{padding-left:14px;padding-right:14px}
+html.yapper-high-contrast .muted,html.yapper-high-contrast .chat-head p,html.yapper-high-contrast .meta time{color:#c3c5d2}
+html.yapper-high-contrast button,html.yapper-high-contrast input,html.yapper-high-contrast select{border-width:2px}
+.message-text,.dm-message-content{font-size:var(--yapper-message-size,13px);font-family:var(--yapper-font-family,'DM Sans',sans-serif);line-height:var(--yapper-line-height,1.6)}
+.message{max-width:var(--yapper-message-width,100%)}
+html[data-theme="light"] .account-setting-control{background:#fff;color:#242638;border-color:#c7cad8}
+html[data-theme="light"] .account-settings-section,html[data-theme="light"] .account-settings-danger{background:#f7f8fc;border-color:#d3d6e2}
+html[data-theme="light"] .account-settings-section button{background:#e8eaf3;color:#242638;border-color:#c7cad8}
+html[data-theme="light"] .account-setting-check{color:#242638}
+html.yapper-reduced-motion *,html.yapper-reduced-motion *::before,html.yapper-reduced-motion *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+@media(max-width:1000px){html.yapper-compact-sidebar .app{grid-template-columns:52px 180px minmax(250px,1fr)}}
+@media(max-width:620px){html.yapper-compact-sidebar .app{grid-template-columns:52px minmax(0,1fr)}}
