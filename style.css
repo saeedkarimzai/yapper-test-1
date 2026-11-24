@@ -268,3 +268,5 @@ html.yapper-hide-members .app{grid-template-columns:66px 235px minmax(260px,1fr)
 html.yapper-hide-members .right{display:none}
 @media(max-width:1000px){html.yapper-hide-members .app{grid-template-columns:60px 205px minmax(250px,1fr)}}
 @media(max-width:620px){.account-settings-nav{width:31px;height:31px;flex-basis:31px}}
+
+.message-text,.dm-message-content{font-size:var(--yapper-message-size,13px)}
