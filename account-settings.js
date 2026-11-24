@@ -55,8 +55,6 @@
  dialog.insertBefore(search,settingsFooter);
  dialog.insertBefore(tabbar,settingsFooter);
  dialog.insertBefore(tabContent,settingsFooter);
- dialog.insertBefore(tabbar,settingsSections[0]);
- dialog.insertBefore(tabContent,settingsSections[0]);
  activateSettingsTab("display");
 
  const status=$("account-settings-status");
