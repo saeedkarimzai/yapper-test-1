@@ -228,3 +228,5 @@ footer{background:#232428;padding:9px 8px;gap:5px}
 .account-info-row span{color:#9da0ad}.account-info-row b,.account-info-row code{overflow-wrap:anywhere;text-align:right}
 .account-settings-danger{border-color:#64404a}.account-settings-danger button{background:#482b33;color:#ffc2c9;border-color:#70424c}
 @media(max-width:620px){.account-settings-modal{padding:15px}.account-info-row{flex-direction:column}.account-info-row b,.account-info-row code{text-align:left}}
+
+.actions #open-account-settings{flex:1;background:#292638;border-color:#48445f;color:#dcd5ff}
