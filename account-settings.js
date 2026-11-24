@@ -37,8 +37,21 @@
   tabPanels[def.id].append(section);
  }
  const intro=document.createElement("p");intro.className="settings-hint";
- intro.textContent="Choose a section below. Changes save automatically on this device.";
+ intro.textContent="Choose a section below. Changes save automatically on this device."; 
+ const search=document.createElement("input");search.type="search";search.className="settings-search";
+ search.placeholder="Search settings…";search.setAttribute("aria-label","Search settings");search.autocomplete="off";
+ const sectionTabs=new Map();
+ for(const section of settingsSections){const heading=section.querySelector("h3")?.textContent||"";const def=tabDefinitions.find(t=>t.match.some(m=>heading.includes(m)))||tabDefinitions[0];sectionTabs.set(section,def.id);}
+ search.addEventListener("input",()=>{
+  const query=search.value.trim().toLowerCase(),matchingTabs=new Set();let firstMatch=null;
+  for(const section of settingsSections){const match=!query||section.textContent.toLowerCase().includes(query);section.hidden=!match;if(match){const tab=sectionTabs.get(section);matchingTabs.add(tab);if(!firstMatch)firstMatch=tab;}}
+  for(const def of tabDefinitions){const button=tabbar.querySelector('[data-settings-tab="'+def.id+'"]');button.hidden=!!query&&!matchingTabs.has(def.id);}
+  if(query&&firstMatch)activateSettingsTab(firstMatch);
+  else if(!query){for(const section of settingsSections)section.hidden=false;tabbar.querySelectorAll("button").forEach(b=>b.hidden=false);activateSettingsTab("display");}
+ });
+ search.addEventListener("keydown",event=>{if(event.key==="Escape"){search.value="";search.dispatchEvent(new Event("input"));}});
  dialog.insertBefore(intro,settingsSections[0]);
+ dialog.insertBefore(search,settingsSections[0]);
  dialog.insertBefore(tabbar,settingsSections[0]);
  dialog.insertBefore(tabContent,settingsSections[0]);
  activateSettingsTab("display");
