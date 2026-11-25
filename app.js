@@ -133,12 +133,32 @@ async function selectServer(id){
   $("empty").querySelector("p").textContent="Create a text channel to start talking.";
  }
 }
+$("channels").addEventListener("contextmenu",event=>{
+ const button=event.target.closest(".channel");
+ if(!button||!S.server)return;
+ event.preventDefault();
+ const key="mutedChannels";
+ const prefs=readServerPrefs(S.server.id);
+ const muted=new Set(prefs[key]||[]);
+ const id=button.dataset.channelId;
+ const wasMuted=muted.has(id);
+ if(wasMuted)muted.delete(id);else muted.add(id);
+ prefs[key]=[...muted];
+ try{localStorage.setItem(serverPrefsKey(S.server.id),JSON.stringify(prefs));renderChannels();toast(wasMuted?"Channel unmuted.":"Channel muted.")}
+ catch(error){toast("Could not save channel mute: "+err(error))}
+});
 function renderChannels(){
  let n=$("channels");n.innerHTML="";
  const heading=$("channel-section-title");
- if(heading)heading.textContent=currentServerPrefs(S.server?.id).showChannelCounts?"TEXT CHANNELS · "+S.channels.length:"TEXT CHANNELS";
+ const prefs=currentServerPrefs(S.server?.id);
+ if(heading)heading.textContent=prefs.showChannelCounts?"TEXT CHANNELS · "+S.channels.length:"TEXT CHANNELS";
+ const muted=new Set(readServerPrefs(S.server?.id).mutedChannels||[]);
  S.channels.forEach(c=>{
   let b=document.createElement("button");b.className="channel"+(S.channel?.id===c.id?" active":"");
+  b.dataset.channelId=c.id;
+  const isMuted=muted.has(c.id);
+  b.classList.toggle("muted",prefs.dimMutedChannels&&isMuted);
+  b.title=isMuted?"Muted channel · right-click to unmute":"Right-click to mute or unmute";
   b.innerHTML="<span>#</span>"+esc(c.name);
   b.onclick=()=>selectChannel(c.id).catch(e=>toast(err(e)));
   n.append(b);
@@ -374,7 +394,7 @@ const SERVER_PREFS=[
  ["enterToSend","Enter sends messages"],["ctrlEnterNewline","Ctrl + Enter inserts a line break"],["spellcheck","Spellcheck messages"],["autoScroll","Auto-scroll to newest messages"],["rememberChannel","Remember last opened channel"],["showTyping","Show typing indicators"],["showReactions","Show message reactions"],["showPinnedFirst","Keep pinned items easy to spot"]
  ]],
  ["Server tools",[
- ["confirmInvites","Confirm before creating invite links"],["copyInviteAutomatically","Copy invite links automatically"],["showServerId","Show server ID in settings"],["confirmLeave","Confirm before leaving"],["warnBeforeDelete","Warn before destructive actions"],["showJoinDate","Show when I joined"],["showRoleLabels","Show member role labels"],["enableQuickSwitch","Enable quick server switching"],["rememberSearch","Remember server search"],["showWelcomeTips","Show server tips"]
+ ["confirmInvites","Confirm before creating invite links"],["copyInviteAutomatically","Copy invite links automatically"],["showServerId","Show server ID in settings"],["confirmLeave","Confirm before leaving"],["warnBeforeDelete","Warn before destructive actions"],["showServerCreationDate","Show server creation date"],["showRoleLabels","Show member role labels"],["enableQuickSwitch","Enable quick server switching"],["rememberSearch","Remember server search"],["showWelcomeTips","Show server tips"]
  ]]
 ];
 const SERVER_PREF_DEFAULTS={
@@ -383,7 +403,7 @@ const SERVER_PREF_DEFAULTS={
  notifyMessages:true,notifyMentions:true,notifyReplies:true,notifyInvites:true,notificationSound:false,desktopAlerts:false,quietMode:false,muteWhenFocused:false,
  hideOnlineStatus:false,hideActivity:false,filterUnknownLinks:true,blurSensitiveMedia:false,hideEmbeds:false,confirmExternalLinks:true,filterProfanity:false,limitDirectMessages:true,
  enterToSend:true,ctrlEnterNewline:false,spellcheck:true,autoScroll:true,rememberChannel:true,showTyping:true,showReactions:true,showPinnedFirst:true,
- confirmInvites:true,copyInviteAutomatically:true,showServerId:true,confirmLeave:true,warnBeforeDelete:true,showJoinDate:true,showRoleLabels:true,enableQuickSwitch:true,rememberSearch:true,showWelcomeTips:true
+ confirmInvites:true,copyInviteAutomatically:true,showServerId:true,confirmLeave:true,warnBeforeDelete:true,showServerCreationDate:true,showRoleLabels:true,enableQuickSwitch:true,rememberSearch:true,showWelcomeTips:true
 };
 function serverPrefsKey(id){return "echo-server-preferences-v1:"+id}
 function readServerPrefs(id){try{return JSON.parse(localStorage.getItem(serverPrefsKey(id))||"{}")}catch{return {}}}
@@ -480,6 +500,12 @@ function openServerSettings(){
  $("server-settings-search").value="";
  const serverPrefs=currentServerPrefs(S.server.id);
  $("server-id-info").textContent=serverPrefs.showServerId?"Server ID: "+S.server.id:"";
+ const serverCreated=$("server-created-info");
+ if(serverCreated){
+  const createdDate=S.server.created_at?new Date(S.server.created_at).toLocaleDateString([],{year:"numeric",month:"long",day:"numeric"}):"Unknown";
+  serverCreated.textContent=serverPrefs.showServerCreationDate?"Created "+createdDate:"";
+  serverCreated.classList.toggle("hidden",!serverPrefs.showServerCreationDate);
+ }
  $("server-id-info").classList.toggle("hidden",!serverPrefs.showServerId);
  const preferenceStatus=$("server-preferences-status");
  if(preferenceStatus)preferenceStatus.textContent="Changes save automatically on this device.";
