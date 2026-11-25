@@ -4,60 +4,102 @@
  const open=$("open-account-settings"),dialog=$("account-settings-modal");
  if(!open||!dialog)return;
 
- // Turn the long settings page into a simple tabbed control panel.
+ // Build a Discord-inspired settings workspace with a real category sidebar.
  const settingsSections=[...dialog.querySelectorAll(".account-settings-section,.account-settings-danger")];
- const tabDefinitions=[
-  {id:"display",label:"🎨 Display",match:["Account information","Appearance","Chat layout"]},
-  {id:"alerts",label:"🔔 Notifications",match:["Notifications"]},
-  {id:"access",label:"♿ Accessibility",match:["Accessibility"]},
-  {id:"security",label:"🔒 Account & privacy",match:["Privacy & session","Change email","Change password","Session"]}
+ const closeForm=dialog.querySelector(".close");
+ const originalTitle=dialog.querySelector(":scope > h2");
+ const status=$("account-settings-status");
+ const settingsFooter=dialog.querySelector(".modal-actions");
+ const sectionFor=section=>(section.querySelector("h3")?.textContent||"").replace(/^[^A-Za-z0-9]+/,"").trim();
+ const entries=[
+  {id:"account",label:"My Account",group:"USER SETTINGS",description:"Your account details, login methods and session controls.",match:["Account information","Change email","Change password","Session"]},
+  {id:"profile",label:"Profiles",group:"USER SETTINGS",description:"Customize the profile other people see.",profile:true,keywords:"profile avatar username picture"},
+  {id:"privacy",label:"Privacy & Safety",group:"USER SETTINGS",description:"Control privacy-related preferences and protect your account.",match:["Privacy & session"]},
+  {id:"appearance",label:"Appearance",group:"APP SETTINGS",description:"Make Echo look and feel the way you like.",match:["Appearance"]},
+  {id:"chat",label:"Chat",group:"APP SETTINGS",description:"Adjust the layout and behaviour of your conversations.",match:["Chat layout"]},
+  {id:"notifications",label:"Notifications",group:"APP SETTINGS",description:"Choose how Echo lets you know about new messages.",match:["Notifications"]},
+  {id:"accessibility",label:"Accessibility",group:"APP SETTINGS",description:"Change motion and contrast options to make Echo easier to use.",match:["Accessibility"]}
  ];
- const tabbar=document.createElement("nav");
- tabbar.className="settings-tabs";tabbar.setAttribute("aria-label","Settings sections");
- const tabContent=document.createElement("div");tabContent.className="settings-tab-content";
- const tabPanels={};
- for(const def of tabDefinitions){
-  const button=document.createElement("button");button.type="button";button.textContent=def.label;
-  button.dataset.settingsTab=def.id;button.setAttribute("aria-controls","settings-panel-"+def.id);
-  button.addEventListener("click",()=>activateSettingsTab(def.id));
-  tabbar.append(button);
-  const panel=document.createElement("div");panel.className="settings-tab-panel";panel.id="settings-panel-"+def.id;
-  panel.hidden=true;tabContent.append(panel);tabPanels[def.id]=panel;
+ const views={},navButtons={},navGroups={};
+ const layout=document.createElement("div");layout.className="account-settings-layout";
+ const sidebar=document.createElement("aside");sidebar.className="settings-sidebar";
+ const sidebarTitle=document.createElement("div");sidebarTitle.className="settings-sidebar-title";sidebarTitle.textContent="USER SETTINGS";sidebar.append(sidebarTitle);
+ const search=document.createElement("input");search.type="search";search.className="settings-search";search.placeholder="Search settings";search.setAttribute("aria-label","Search settings");search.autocomplete="off";sidebar.append(search);
+ const nav=document.createElement("nav");nav.className="settings-nav";nav.setAttribute("aria-label","Settings categories");sidebar.append(nav);
+ const main=document.createElement("main");main.className="settings-main";
+ const mainHeader=document.createElement("header");mainHeader.className="settings-main-header";
+ const mainTitle=document.createElement("h2");mainTitle.className="settings-page-title";
+ const mainDescription=document.createElement("p");mainDescription.className="settings-page-description";
+ const topRight=document.createElement("div");topRight.className="settings-close-area";
+ const closeLabel=document.createElement("span");closeLabel.textContent="ESC";
+ topRight.append(closeLabel,closeForm);
+ mainHeader.append(mainTitle,mainDescription,topRight);
+ const scroll=document.createElement("div");scroll.className="settings-main-scroll";
+ const statusArea=document.createElement("div");statusArea.className="settings-status-area";statusArea.append(status);
+ const hint=document.createElement("p");hint.className="settings-hint";hint.textContent="Changes to appearance and chat preferences save automatically on this device.";
+ scroll.append(statusArea);
+ for(const entry of entries){
+  if(!navGroups[entry.group]){
+   const group=document.createElement("section");group.className="settings-nav-group";
+   const heading=document.createElement("h3");heading.textContent=entry.group;group.append(heading);nav.append(group);navGroups[entry.group]=group;
+  }
+  const button=document.createElement("button");button.type="button";button.textContent=entry.label;button.dataset.settingsTab=entry.id;
+  button.addEventListener("click",()=>activateSettingsTab(entry.id));
+  navGroups[entry.group].append(button);navButtons[entry.id]=button;
+  if(entry.profile)continue;
+  const panel=document.createElement("section");panel.className="settings-view";panel.hidden=true;panel.id="settings-panel-"+entry.id;
+  const title=document.createElement("h3");title.textContent=entry.label;
+  const description=document.createElement("p");description.className="settings-view-description";description.textContent=entry.description;
+  panel.append(title,description);
+  const selected=settingsSections.filter(section=>entry.match.some(name=>sectionFor(section).includes(name)));
+  selected.forEach(section=>panel.append(section));
+  views[entry.id]=panel;scroll.append(panel);
  }
+ const footer=document.createElement("footer");footer.className="settings-main-footer";footer.append(settingsFooter);
+ main.append(mainHeader,scroll,footer);
+ layout.append(sidebar,main);
+ dialog.replaceChildren(layout);
+ if(originalTitle)originalTitle.remove();
  function activateSettingsTab(id){
-  for(const def of tabDefinitions){
-   const active=def.id===id,button=tabbar.querySelector('[data-settings-tab="'+def.id+'"]');
-   button.classList.toggle("active",active);button.setAttribute("aria-selected",String(active));
-   tabPanels[def.id].hidden=!active;
+  const entry=entries.find(item=>item.id===id);if(!entry)return;
+  if(entry.profile){
+   dialog.close();
+   $("edit-profile").click();
+   return;
+  }
+  for(const item of entries){
+   navButtons[item.id].classList.toggle("active",item.id===id);
+   navButtons[item.id].setAttribute("aria-current",item.id===id?"page":"false");
+   if(views[item.id])views[item.id].hidden=item.id!==id;
+  }
+  mainTitle.textContent=entry.label;
+  mainDescription.textContent=entry.description;
+  search.placeholder="Search "+entry.label.toLowerCase()+"…";
+ }
+ function filterSettings(){
+  const query=search.value.trim().toLowerCase();
+  let first=null;
+  for(const entry of entries){
+   let matches=!query||entry.label.toLowerCase().includes(query)||String(entry.keywords||"").includes(query);
+   const sections=entry.match?settingsSections.filter(section=>entry.match.some(name=>sectionFor(section).includes(name))):[];
+   if(query&&sections.some(section=>section.textContent.toLowerCase().includes(query)))matches=true;
+   navButtons[entry.id].hidden=!matches;
+   if(navButtons[entry.id].parentElement)navButtons[entry.id].parentElement.hidden=false;
+   sections.forEach(section=>{section.hidden=!!query&&!section.textContent.toLowerCase().includes(query)});
+   if(matches&&!first)first=entry.id;
+  }
+  Object.values(navGroups).forEach(group=>{group.hidden=!Array.from(group.querySelectorAll("button")).some(button=>!button.hidden)});
+  if(query&&first)activateSettingsTab(first);
+  else if(!query)activateSettingsTab("account");
+  else if(!first){
+   for(const entry of entries)if(views[entry.id])views[entry.id].hidden=true;
+   mainTitle.textContent="No results";mainDescription.textContent="No settings match “"+search.value.trim()+"”.";
   }
  }
- for(const section of settingsSections){
-  const heading=section.querySelector("h3")?.textContent||"";
-  const def=tabDefinitions.find(t=>t.match.some(m=>heading.includes(m)))||tabDefinitions[0];
-  tabPanels[def.id].append(section);
- }
- const intro=document.createElement("p");intro.className="settings-hint";
- intro.textContent="Choose a section below. Changes save automatically on this device."; 
- const search=document.createElement("input");search.type="search";search.className="settings-search";
- search.placeholder="Search settings…";search.setAttribute("aria-label","Search settings");search.autocomplete="off";
- const sectionTabs=new Map();
- for(const section of settingsSections){const heading=section.querySelector("h3")?.textContent||"";const def=tabDefinitions.find(t=>t.match.some(m=>heading.includes(m)))||tabDefinitions[0];sectionTabs.set(section,def.id);}
- search.addEventListener("input",()=>{
-  const query=search.value.trim().toLowerCase(),matchingTabs=new Set();let firstMatch=null;
-  for(const section of settingsSections){const match=!query||section.textContent.toLowerCase().includes(query);section.hidden=!match;if(match){const tab=sectionTabs.get(section);matchingTabs.add(tab);if(!firstMatch)firstMatch=tab;}}
-  for(const def of tabDefinitions){const button=tabbar.querySelector('[data-settings-tab="'+def.id+'"]');button.hidden=!!query&&!matchingTabs.has(def.id);}
-  if(query&&firstMatch)activateSettingsTab(firstMatch);
-  else if(!query){for(const section of settingsSections)section.hidden=false;tabbar.querySelectorAll("button").forEach(b=>b.hidden=false);activateSettingsTab("display");}
- });
- search.addEventListener("keydown",event=>{if(event.key==="Escape"){search.value="";search.dispatchEvent(new Event("input"));}});
- const settingsFooter=dialog.querySelector(".modal-actions");
- dialog.insertBefore(intro,settingsFooter);
- dialog.insertBefore(search,settingsFooter);
- dialog.insertBefore(tabbar,settingsFooter);
- dialog.insertBefore(tabContent,settingsFooter);
- activateSettingsTab("display");
+ search.addEventListener("input",filterSettings);
+ search.addEventListener("keydown",event=>{if(event.key==="Escape"){search.value="";filterSettings();}});
+ activateSettingsTab("account");
 
- const status=$("account-settings-status");
  const PREF_KEY="yapper-app-preferences-v1";
  const defaults={
   theme:"dark",accent:"#9676ff",fontFamily:"DM Sans",fontSize:13,lineHeight:1.6,messageWidth:100,
@@ -142,7 +184,7 @@
   if(p.sound)playMessageSound();
   if(p.desktopNotifications&&document.hidden&&"Notification" in window&&Notification.permission==="granted"){
    const body=String(message?.content||"New message").slice(0,120);
-   try{new Notification("New YAPPER message",{body,tag:"yapper-"+(message?.id||Date.now())})}catch{}
+   try{new Notification("New Echo message",{body,tag:"yapper-"+(message?.id||Date.now())})}catch{}
   }
  };
  $("setting-notification-permission").addEventListener("click",async()=>{
@@ -165,7 +207,7 @@
  $("account-reset-preferences").addEventListener("click",()=>{try{localStorage.removeItem(PREF_KEY)}catch{}loadPrefs();say("All app preferences reset.")});
  $("account-export-preferences").addEventListener("click",()=>{
   const blob=new Blob([JSON.stringify(readPrefs(),null,2)],{type:"application/json"});
-  const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="yapper-settings.json";a.click();URL.revokeObjectURL(url);say("Settings export downloaded.");
+  const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="echo-settings.json";a.click();URL.revokeObjectURL(url);say("Settings export downloaded.");
  });
  $("account-email-form").addEventListener("submit",async e=>{
   e.preventDefault();const button=$("account-email-save"),email=$("account-new-email").value.trim();
@@ -184,7 +226,7 @@
  });
  $("account-copy-id").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(S.user.id);say("Account ID copied.")}catch{say("Clipboard access is unavailable in this browser.",true)}});
  $("account-signout").addEventListener("click",async()=>{
-  if(readPrefs().confirmSignout&&!confirm("Sign out of YAPPER on this device?"))return;
+  if(readPrefs().confirmSignout&&!confirm("Sign out of Echo on this device?"))return;
   const {error}=await S.db.auth.signOut();if(error)say(error.message,true);else dialog.close();
  });
  $("message-input").addEventListener("keydown",event=>{
