@@ -192,6 +192,8 @@
     try { await loadFriends(); } catch (e) { note("Couldn't load friends: " + (e.message || e), true); }
   }
   $f("open-friends").addEventListener("click", openFriends);
+  const homeButton = $f("home-nav");
+  if (homeButton) homeButton.addEventListener("click", openFriends);
   const mobileFriendsButton = $f("open-friends-mobile");
   if (mobileFriendsButton) mobileFriendsButton.addEventListener("click", openFriends);
   $f("friends-close").addEventListener("click", () => $f("friends-modal").close());
