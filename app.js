@@ -257,7 +257,58 @@ async function selectChannel(id){
   });
  S.sub=channelSub;
 }
-function renderMessages(){let root=$("messages");root.innerHTML="";$("empty").classList.toggle("hidden",!!(S.channel&&S.messages.length));if(S.channel&&!S.messages.length){$("empty").classList.remove("hidden");$("empty").querySelector("h2").textContent="Welcome to #"+S.channel.name+".";$("empty").querySelector("p").textContent="Be the first to send a message."}S.messages.forEach(m=>{let own=m.user_id===S.user?.id,name=own?(S.user.email||"You"):"Yapper "+String(m.user_id).slice(0,7),d=new Date(m.created_at),el=document.createElement("article");el.className="message";el.innerHTML='<div class="avatar">'+esc(initial(name))+'</div><div class="message-body"><div class="meta"><b>'+esc(name)+'</b><time>'+esc(d.toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}))+'</time></div></div>';let body=el.querySelector(".message-body"),content=document.createElement("div");content.className="message-text";if(window.yapperRenderContent)window.yapperRenderContent(content,m.content,"main");else content.textContent=m.content;body.append(content);root.append(el)});root.scrollTop=root.scrollHeight}
+function renderMessages(){
+ let root=$("messages");root.innerHTML="";
+ $("empty").classList.toggle("hidden",!!(S.channel&&S.messages.length));
+ if(S.channel&&!S.messages.length){$("empty").classList.remove("hidden");$("empty").querySelector("h2").textContent="Welcome to #"+S.channel.name+".";$("empty").querySelector("p").textContent="Be the first to send a message."}
+ S.messages.forEach(m=>{
+  let own=m.user_id===S.user?.id,name=own?(S.profile?.username||S.user.email||"You"):(S.profiles?.[m.user_id]?.username||"Member "+String(m.user_id).slice(0,6)),d=new Date(m.created_at),el=document.createElement("article");
+  el.className="message";el.dataset.messageId=m.id;
+  let avatar=document.createElement("div");avatar.className="avatar";
+  const profile=S.profiles?.[m.user_id];if(profile?.avatar_url){const img=document.createElement("img");img.src=profile.avatar_url;img.alt="";img.loading="lazy";avatar.append(img)}else avatar.textContent=initial(name);
+  let body=document.createElement("div");body.className="message-body";
+  let meta=document.createElement("div");meta.className="meta";
+  let author=document.createElement("b");author.textContent=name;
+  let time=document.createElement("time");time.textContent=d.toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+  meta.append(author,time);
+  let actions=document.createElement("div");actions.className="message-toolbar";
+  let menuButton=document.createElement("button");menuButton.type="button";menuButton.className="message-menu-toggle";menuButton.textContent="•••";menuButton.title="Message options";menuButton.setAttribute("aria-label","Message options");
+  let menu=document.createElement("div");menu.className="message-menu hidden";menu.setAttribute("role","menu");
+  const addAction=(action,label)=>{let b=document.createElement("button");b.type="button";b.dataset.messageAction=action;b.textContent=label;b.setAttribute("role","menuitem");menu.append(b)};
+  addAction("copy","Copy message");addAction("reply","Reply");
+  if(own){addAction("edit","Edit message");addAction("delete","Delete message")}
+  actions.append(menuButton,menu);meta.append(actions);
+  let content=document.createElement("div");content.className="message-text";
+  if(window.yapperRenderContent)window.yapperRenderContent(content,m.content,"main");else content.textContent=m.content;
+  body.append(meta,content);el.append(avatar,body);root.append(el);
+ });
+ root.scrollTop=root.scrollHeight;
+}
+if(!window.echoMessageActionsBound){
+ window.echoMessageActionsBound=true;
+ $("messages").addEventListener("click",async event=>{
+  const toggle=event.target.closest(".message-menu-toggle");
+  if(toggle){const menu=toggle.nextElementSibling;document.querySelectorAll(".message-menu").forEach(m=>{if(m!==menu)m.classList.add("hidden")});menu.classList.toggle("hidden");return}
+  const actionButton=event.target.closest("[data-message-action]");
+  if(!actionButton)return;
+  const article=actionButton.closest(".message"),message=S.messages.find(m=>String(m.id)===article?.dataset.messageId);
+  if(!message)return;
+  const action=actionButton.dataset.messageAction;
+  article.querySelector(".message-menu")?.classList.add("hidden");
+  if(action==="copy"){try{await navigator.clipboard.writeText(message.content);toast("Message copied.")}catch{toast("Clipboard access is unavailable in this browser.")};return}
+  if(action==="reply"){$("message-input").value="↪ "+(S.profiles?.[message.user_id]?.username||"Member")+": ";$("message-input").focus();$("message-input").dispatchEvent(new Event("input"));return}
+  if(message.user_id!==S.user?.id)return toast("You can only change your own messages.");
+  if(action==="edit"){
+   const updated=prompt("Edit your message:",message.content);if(updated===null)return;const content=updated.trim();if(!content)return toast("A message can't be empty.");
+   try{const {error}=await S.db.from("messages").update({content,edited_at:new Date().toISOString()}).eq("id",message.id).eq("user_id",S.user.id);if(error)throw error;message.content=content;message.edited_at=new Date().toISOString();renderMessages();toast("Message updated.")}catch(error){toast(err(error))}
+  }
+  if(action==="delete"){
+   if(!confirm("Delete this message? This can't be undone."))return;
+   try{const {error}=await S.db.from("messages").delete().eq("id",message.id).eq("user_id",S.user.id);if(error)throw error;S.messages=S.messages.filter(m=>m.id!==message.id);renderMessages();toast("Message deleted.")}catch(error){toast(err(error))}
+  }
+ });
+ document.addEventListener("click",event=>{if(!event.target.closest(".message-toolbar"))document.querySelectorAll(".message-menu").forEach(m=>m.classList.add("hidden"))});
+}
 $("message-input").addEventListener("input",()=>{
  const input=$("message-input");
  input.style.height="28px";
