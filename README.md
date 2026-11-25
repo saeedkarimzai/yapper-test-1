@@ -31,9 +31,11 @@ The browser uses a Supabase publishable key. That key is designed to be public; 
 
 In GitHub, open **Settings → Pages**, choose **Deploy from a branch**, select `main` and `/(root)`, then save. The site is static and does not need Node.js.
 
-## Invite friends to a server
+## Join and discover servers
 
-Create a server, then click **Invite** beside its name. YAPPER creates a random invite code and copies a link. Friends can open the link after signing in, or paste the code into **Join**. Only server owners can create invites; ordinary users cannot join by guessing a server ID.
+Open **Join** in Echo to browse the public community directory, search by server name, and filter by category. Server owners control whether their server appears in discovery from **Server Settings → Public server discovery**. Servers are private by default. Owners can also create invite links for private or unlisted servers; people can paste the link or invite code into the Join page.
+
+The `server_discovery_directory` migration adds the discovery fields and permission-checked join/list RPCs. It is included in `COMPLETE-SETUP.sql` for new installs and is also available separately as `SERVER-DISCOVERY-SETUP.sql` for existing installs.
 
 ## Troubleshooting
 
