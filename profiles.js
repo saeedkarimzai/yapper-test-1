@@ -105,7 +105,7 @@
 
   async function loadMembers() {
     if (!S.server) return;
-    const result = await S.db.from("server_members").select("user_id,role,created_at").eq("server_id", S.server.id);
+    const result = await S.db.from("server_members").select("user_id,role").eq("server_id", S.server.id);
     if (result.error) throw result.error;
     const memberships = result.data || [];
     const ids = memberships.map(row => row.user_id);
@@ -116,7 +116,7 @@
     S.memberProfiles = (profiles.data || []).map(profile => ({
       ...profile,
       role: membershipsById[profile.id]?.role || "member",
-      joined_at: membershipsById[profile.id]?.created_at || null
+      joined_at: null
     }));
     S.memberProfiles.forEach(p => { S.profiles[p.id] = p; });
     renderMembers();
