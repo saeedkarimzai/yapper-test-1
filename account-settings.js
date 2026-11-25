@@ -209,7 +209,29 @@
   };
   for(const [id,key] of Object.entries(map)){const el=$(id);if(el){if(el.type==="checkbox")el.checked=!!p[key];else el.value=String(key==="lineHeight"?Math.round(p[key]*10):p[key]);}}
   updateLabels(p);applyPrefs(p);
-  if($status)$status.textContent="Browser notification permission: "+(("Notification" in window)?Notification.permission:"not supported");
+  updateNotificationStatus();
+ }
+ function updateNotificationStatus(){
+  if(!$status)return;
+  $status.textContent="Browser notification permission: "+(("Notification" in window)?Notification.permission:"not supported");
+ }
+ async function requestDesktopPermission(){
+  if(!("Notification" in window)){say("This browser does not support desktop notifications.",true);return false;}
+  try{
+   let permission=Notification.permission;
+   if(permission==="default")permission=await Notification.requestPermission();
+   updateNotificationStatus();
+   if(permission!=="granted"){
+    $("setting-desktop-notifications").checked=false;
+    savePrefs();
+    say(permission==="denied"?"Notifications are blocked. Allow them in Chrome site settings first.":"Notification permission was not granted.",true);
+    return false;
+   }
+   $("setting-desktop-notifications").checked=true;
+   savePrefs();
+   say("Desktop notifications are enabled.");
+   return true;
+  }catch(error){say(error.message||String(error),true);return false;}
  }
  function playMessageSound(){
   try{
@@ -221,18 +243,31 @@
    osc.onended=()=>ctx.close();
   }catch{}
  }
- window.yapperNotifyIncoming=(message)=>{
-  const p=readPrefs();if(message?.user_id===S.user?.id)return;
-  if(p.sound)playMessageSound();
-  if(p.desktopNotifications&&document.hidden&&"Notification" in window&&Notification.permission==="granted"){
-   const body=String(message?.content||"New message").slice(0,120);
-   try{new Notification("New Echo message",{body,tag:"yapper-"+(message?.id||Date.now())})}catch{}
+ window.echoGetAppPrefs=readPrefs;
+ window.yapperNotifyIncoming=(message,options={})=>{
+  const p=readPrefs();
+  if(typeof S!=="undefined"&&message?.user_id===S.user?.id)return;
+  const serverPrefs=options.direct?{}:(window.echoGetServerPrefs?.(S.server?.id)||{});
+  const content=String(message?.content||"New message");
+  const username=String(S.profile?.username||"");
+  const mention=!!username&&(content.toLowerCase().includes("@"+username.toLowerCase())||content.toLowerCase().includes("@everyone"));
+  if(serverPrefs.quietMode)return;
+  if(serverPrefs.muteWhenFocused&&!document.hidden)return;
+  if(mention&&serverPrefs.notifyMentions===false)return;
+  if(!mention&&serverPrefs.notifyMessages===false)return;
+  if(message?.reply_to&&serverPrefs.notifyReplies===false)return;
+  if(p.sound||serverPrefs.notificationSound)playMessageSound();
+  const desktopEnabled=p.desktopNotifications||serverPrefs.desktopAlerts;
+  if(desktopEnabled&&document.hidden&&"Notification" in window&&Notification.permission==="granted"){
+   const sender=options.direct?(options.senderName||"a friend"):"";
+   const title=options.direct?"New message from @"+sender:"New Echo message"+(mention?" · Mention":"");
+   try{new Notification(title,{body:content.slice(0,120),tag:"echo-"+(message?.id||Date.now())})}catch{}
   }
  };
- $("setting-notification-permission").addEventListener("click",async()=>{
-  if(!("Notification" in window)){$status.textContent="This browser does not support desktop notifications.";return}
-  try{const result=await Notification.requestPermission();$status.textContent="Browser notification permission: "+result;if(result==="granted")say("Browser notifications enabled.");else say("Notifications were not enabled.",true)}
-  catch(error){say(error.message||String(error),true)}
+ $("setting-notification-permission").addEventListener("click",requestDesktopPermission);
+ $("setting-desktop-notifications").addEventListener("change",async()=>{
+  if($("setting-desktop-notifications").checked)await requestDesktopPermission();
+  else savePrefs();
  });
  open.addEventListener("click",()=>{fill();dialog.showModal()});
  function fill(){
@@ -247,7 +282,10 @@
  }
  $("account-settings-close").addEventListener("click",()=>dialog.close());
  const settingIds=["setting-theme","setting-accent","setting-font-family","setting-font-size","setting-line-height","setting-message-width","setting-compact","setting-compact-sidebar","setting-hide-members","setting-show-avatars","setting-show-timestamps","setting-show-typing","setting-show-gifs","setting-enter-send","setting-sound","setting-desktop-notifications","setting-reduced-motion","setting-high-contrast","setting-confirm-signout"];
- settingIds.forEach(id=>{const el=$(id);el.addEventListener("input",savePrefs);el.addEventListener("change",savePrefs)});
+ settingIds.forEach(id=>{
+  const el=$(id);if(!el)return;
+  el.addEventListener(el.type==="range"?"input":"change",savePrefs);
+ });
  $("account-reset-preferences").addEventListener("click",()=>{try{localStorage.removeItem(PREF_KEY)}catch{}loadPrefs();say("All app preferences reset.")});
  $("account-export-preferences").addEventListener("click",()=>{
   const blob=new Blob([JSON.stringify(readPrefs(),null,2)],{type:"application/json"});
@@ -275,7 +313,9 @@
  });
  $("message-input").addEventListener("keydown",event=>{
   if(event.key!=="Enter"||event.shiftKey)return;
-  if(!readPrefs().enterSend){event.preventDefault();if(event.ctrlKey||event.metaKey) $("message-form").requestSubmit();}
+  const overrides=window.echoGetServerPrefOverrides?.(S.server?.id)||{};
+  const enterSend=typeof overrides.enterToSend==="boolean"?overrides.enterToSend:readPrefs().enterSend;
+  if(!enterSend){event.preventDefault();if(event.ctrlKey||event.metaKey)$("message-form").requestSubmit();}
  });
  applyPrefs();
  if(typeof S!=="undefined"&&S.db)S.db.auth.onAuthStateChange((event,session)=>{if(session?.user&&dialog.open)fill()});
