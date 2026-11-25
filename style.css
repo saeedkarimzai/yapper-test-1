@@ -1290,3 +1290,5 @@ html[data-theme="light"] .composer textarea#message-input::placeholder{color:#73
 html.yapper-server-hide-reactions .reaction-chip,
 html.yapper-server-hide-reactions .reaction-add,
 html.yapper-server-hide-reactions .reaction-picker{display:none!important}
+
+.channel.muted{opacity:.48;filter:saturate(.55)}.channel.muted:hover{opacity:.85}
