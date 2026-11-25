@@ -353,3 +353,87 @@ html[data-theme="light"] .settings-search::placeholder{color:#777d90}
 .server-preferences-actions{display:flex;justify-content:flex-end;margin-top:12px}
 #server-settings-reset{border:1px solid #70434a;background:#382329;color:#ffc3ca;border-radius:7px;padding:9px 12px;font-size:11px;font-weight:700}
 @media(max-width:560px){.server-settings-groups{grid-template-columns:1fr}.server-preferences-head{flex-direction:column}.server-settings-modal{padding:18px}}
+
+/* Discord-inspired full settings workspace */
+.account-settings-modal{width:min(1160px,96vw);max-width:none;height:min(850px,92vh);max-height:92vh;margin:auto;padding:0;border:1px solid #4a4c55;border-radius:12px;overflow:hidden;background:#313338;color:#f2f3f5;box-shadow:0 24px 90px #0009}
+.account-settings-modal::backdrop{background:#08090dcc;backdrop-filter:blur(5px)}
+.account-settings-layout{display:grid;grid-template-columns:238px minmax(0,1fr);height:100%;min-height:0}
+.settings-sidebar{display:flex;flex-direction:column;min-width:0;overflow:auto;background:#1e1f22;padding:28px 12px 18px}
+.settings-sidebar-title{padding:0 10px 13px;color:#b5bac1;font-size:11px;font-weight:800;letter-spacing:.1em}
+.settings-search{display:block;width:100%;box-sizing:border-box;margin:0 0 16px;padding:10px 11px;border:1px solid #3d3f46;border-radius:6px;background:#111214;color:#f2f3f5;font-size:12px}
+.settings-search::placeholder{color:#8e9299}
+.settings-nav{display:flex;flex-direction:column;gap:19px}
+.settings-nav-group{display:flex;flex-direction:column;gap:2px}
+.settings-nav-group h3{margin:0 9px 6px;color:#949ba4;font-size:10px;font-weight:800;letter-spacing:.09em}
+.settings-nav button{width:100%;border:0;border-radius:5px;padding:9px 10px;background:transparent;color:#b5bac1;text-align:left;font-size:13px;font-weight:600;transition:background .12s,color .12s}
+.settings-nav button:hover{background:#35373c;color:#f2f3f5}
+.settings-nav button.active{background:#404249;color:#fff}
+.settings-nav button[hidden],.settings-nav-group[hidden]{display:none!important}
+.settings-main{position:relative;display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;background:#313338;padding:38px 38px 18px}
+.settings-main-header{position:relative;flex:none;min-height:76px;padding:0 78px 14px 0;border-bottom:1px solid #41434a}
+.settings-page-title{margin:0 0 7px;font-size:21px;font-weight:800;letter-spacing:-.02em}
+.settings-page-description{margin:0;color:#b5bac1;font-size:12px;line-height:1.5}
+.settings-close-area{position:absolute;top:0;right:0;display:flex;flex-direction:column;align-items:center;gap:5px;color:#b5bac1;font-size:10px;font-weight:800}
+.settings-close-area .close{position:static;margin:0}
+.settings-close-area .close button{display:grid;place-items:center;width:38px;height:38px;border:2px solid #b5bac1;border-radius:50%;background:transparent;color:#f2f3f5;font-size:17px;padding:0}
+.settings-close-area .close button:hover{background:#41434a}
+.settings-main-scroll{flex:1;min-height:0;overflow:auto;padding:18px 12px 18px 0;scrollbar-color:#555860 transparent;scrollbar-width:thin}
+.settings-status-area{margin-bottom:12px}
+.account-settings-status{margin:0;color:#b5bac1;font-size:11px;min-height:14px}
+.settings-view[hidden]{display:none!important}
+.settings-view>h3{margin:0 0 5px;font-size:18px;font-weight:800}
+.settings-view-description{margin:0 0 18px;color:#b5bac1;font-size:12px;line-height:1.5}
+.settings-view .account-settings-section,.settings-view .account-settings-danger{margin:12px 0;padding:18px 20px;border:1px solid #41434a;border-radius:8px;background:#2b2d31}
+.settings-view .account-settings-section h3,.settings-view .account-settings-danger h3{margin:0 0 13px;color:#f2f3f5;font-size:14px}
+.settings-view .account-settings-section p,.settings-view .account-settings-danger p{font-size:12px}
+.settings-view .account-setting-check{display:flex!important;align-items:center;gap:12px;margin:0!important;padding:12px 3px!important;border:0!important;border-bottom:1px solid #3b3d43!important;border-radius:0!important;background:transparent!important;color:#dbdee1;font-size:12px!important}
+.settings-view .account-setting-check:last-child{border-bottom:0!important}
+.settings-view .account-setting-check input{width:18px!important;height:18px;accent-color:#5865f2}
+.settings-view .account-settings-section label:not(.account-setting-check){display:block;margin:13px 0 7px;color:#dbdee1;font-size:12px;font-weight:700}
+.settings-view .account-setting-control,.settings-view input:not([type=checkbox]):not([type=range]),.settings-view textarea{width:100%;max-width:520px;box-sizing:border-box;padding:11px 12px;border:1px solid #1e1f22;border-radius:5px;background:#1e1f22;color:#f2f3f5;font-size:13px}
+.settings-view .account-settings-section input[type=range]{display:block;max-width:520px;accent-color:#5865f2}
+.settings-view .account-settings-section button,.settings-view .account-settings-danger button{margin:8px 8px 0 0;padding:9px 13px;border:0;border-radius:5px;background:#4e5058;color:#fff;font-size:12px;font-weight:700}
+.settings-view .account-settings-section button:hover,.settings-view .account-settings-danger button:hover{background:#60636d}
+.settings-view .account-settings-danger{border-color:#743d43;background:#35272a}
+.settings-view .account-settings-danger h3{color:#ffbfc5}
+.settings-view .account-settings-danger button{background:#da373c}
+.settings-main-footer{flex:none;padding-top:12px;border-top:1px solid #41434a}
+.settings-main-footer .modal-actions{display:flex;justify-content:flex-end;margin:0}
+.settings-main-footer .modal-actions button{padding:9px 18px;border:0;border-radius:5px;background:#5865f2;color:#fff;font-size:12px;font-weight:800}
+.settings-main-footer .modal-actions button:hover{background:#4752c4}
+html[data-theme=light] .account-settings-modal{background:#f2f3f5;color:#232428;border-color:#d7d9df}
+html[data-theme=light] .settings-sidebar{background:#e3e5e8}
+html[data-theme=light] .settings-sidebar-title,html[data-theme=light] .settings-nav-group h3{color:#555963}
+html[data-theme=light] .settings-search{background:#fff;color:#232428;border-color:#c9ccd3}
+html[data-theme=light] .settings-nav button{color:#4e5058}
+html[data-theme=light] .settings-nav button:hover{background:#d4d6db;color:#232428}
+html[data-theme=light] .settings-nav button.active{background:#c8cbd2;color:#17181b}
+html[data-theme=light] .settings-main{background:#f2f3f5}
+html[data-theme=light] .settings-main-header,html[data-theme=light] .settings-main-footer{border-color:#d7d9df}
+html[data-theme=light] .settings-page-description,html[data-theme=light] .settings-view-description,html[data-theme=light] .account-settings-status{color:#5f636d}
+html[data-theme=light] .settings-view .account-settings-section,html[data-theme=light] .settings-view .account-settings-danger{background:#fff;border-color:#d7d9df}
+html[data-theme=light] .settings-view .account-settings-section h3,html[data-theme=light] .settings-view .account-settings-danger h3,html[data-theme=light] .settings-view .account-setting-check,html[data-theme=light] .settings-view .account-settings-section label:not(.account-setting-check){color:#232428}
+html[data-theme=light] .settings-view .account-setting-control,html[data-theme=light] .settings-view input:not([type=checkbox]):not([type=range]),html[data-theme=light] .settings-view textarea{background:#f2f3f5;color:#232428;border-color:#c9ccd3}
+html[data-theme=light] .settings-close-area .close button{color:#454852;border-color:#777b85}
+html[data-theme=light] .settings-close-area .close button:hover{background:#dfe1e6}
+@media(max-width:720px){
+ .account-settings-modal{width:98vw;height:94vh;max-height:94vh}
+ .account-settings-layout{grid-template-columns:174px minmax(0,1fr)}
+ .settings-main{padding:30px 18px 14px}
+ .settings-sidebar{padding:22px 8px 12px}
+ .settings-main-header{padding-right:52px}
+ .settings-page-title{font-size:18px}
+ .settings-view .account-settings-section,.settings-view .account-settings-danger{padding:14px}
+}
+@media(max-width:480px){
+ .account-settings-layout{grid-template-columns:126px minmax(0,1fr)}
+ .settings-sidebar-title{font-size:9px;padding-left:6px}
+ .settings-nav-group h3{font-size:8px;margin-left:6px}
+ .settings-nav button{padding:9px 6px;font-size:11px}
+ .settings-main{padding:24px 12px 10px}
+ .settings-main-header{padding-right:42px}
+ .settings-close-area .close button{width:31px;height:31px}
+ .settings-close-area>span{font-size:8px}
+ .settings-view .account-settings-section,.settings-view .account-settings-danger{padding:12px}
+ .settings-view .account-setting-check{font-size:11px!important}
+}
