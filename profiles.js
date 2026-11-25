@@ -88,37 +88,60 @@
 
   function renderMembers() {
     const root = document.getElementById("member-list");
+    const count = document.getElementById("member-count");
     if (!root) return;
-    root.innerHTML = "";
-    if (!S.server) { root.textContent = "Choose a server to see its members."; return; }
-    if (!S.memberProfiles.length) { root.textContent = "No members yet."; return; }
-    S.memberProfiles.slice().sort((a, b) =>
+    root.replaceChildren();
+    if (!S.server) {
+      if (count) count.textContent = "0";
+      root.textContent = "Choose a server to see its members.";
+      return;
+    }
+    const people = S.memberProfiles.slice().sort((a, b) =>
       Number(S.onlineIds.has(b.id)) - Number(S.onlineIds.has(a.id)) || a.username.localeCompare(b.username)
-    ).forEach(profile => {
-      const row = document.createElement("div");
-      row.className = "member-row";
-      const avatar = document.createElement("div");
-      avatar.className = "member-avatar";
-      if (profile.avatar_url) {
-        const image = document.createElement("img");
-        image.src = profile.avatar_url;
-        image.alt = "";
-        avatar.append(image);
-      } else avatar.textContent = initial(profile.username);
-      const info = document.createElement("div");
-      info.className = "member-name";
-      const username = document.createElement("b");
-      username.textContent = profile.username;
-      const status = document.createElement("small");
-      const online = S.onlineIds.has(profile.id);
-      status.textContent = online ? "Online" : "Offline";
-      status.className = online ? "status-online" : "status-offline";
-      const dot = document.createElement("i");
-      dot.className = "presence-dot" + (online ? " online" : "");
-      info.append(username, status);
-      row.append(avatar, info, dot);
-      root.append(row);
-    });
+    );
+    const online = people.filter(profile => S.onlineIds.has(profile.id));
+    const offline = people.filter(profile => !S.onlineIds.has(profile.id));
+    if (count) count.textContent = String(people.length);
+    if (!people.length) {
+      const empty = document.createElement("p");
+      empty.className = "member-empty";
+      empty.textContent = "No members yet.";
+      root.append(empty);
+      return;
+    }
+    const addGroup = (label, members, isOnline) => {
+      if (!members.length) return;
+      const heading = document.createElement("div");
+      heading.className = "member-group-title";
+      heading.textContent = label + " — " + members.length;
+      root.append(heading);
+      members.forEach(profile => {
+        const row = document.createElement("div");
+        row.className = "member-row";
+        const avatar = document.createElement("div");
+        avatar.className = "member-avatar";
+        if (profile.avatar_url) {
+          const image = document.createElement("img");
+          image.src = profile.avatar_url;
+          image.alt = "";
+          avatar.append(image);
+        } else avatar.textContent = initial(profile.username);
+        const info = document.createElement("div");
+        info.className = "member-name";
+        const username = document.createElement("b");
+        username.textContent = profile.username;
+        const status = document.createElement("small");
+        status.textContent = isOnline ? "Online" : "Offline";
+        status.className = isOnline ? "status-online" : "status-offline";
+        const dot = document.createElement("i");
+        dot.className = "presence-dot" + (isOnline ? " online" : "");
+        info.append(username, status);
+        row.append(avatar, info, dot);
+        root.append(row);
+      });
+    };
+    addGroup("Online", online, true);
+    addGroup("Offline", offline, false);
   }
 
   async function hydrateMessageProfiles() {
@@ -146,13 +169,18 @@
       empty.querySelector("h2").textContent = "Welcome to #" + S.channel.name + ".";
       empty.querySelector("p").textContent = "Be the first to send a message.";
     }
-    S.messages.forEach(message => {
+    S.messages.forEach((message, index) => {
       const profile = S.profiles[message.user_id];
       const name = profile?.username || (message.user_id === S.user?.id ? (S.profile?.username || "You") : "Yapper");
       const avatarUrl = profile?.avatar_url;
       const article = document.createElement("article");
-      article.className = "message";
+      const previous = S.messages[index - 1];
+      const sameAuthorContinuation = !!previous &&
+        previous.user_id === message.user_id &&
+        (new Date(message.created_at).getTime() - new Date(previous.created_at).getTime()) < 5 * 60 * 1000;
+      article.className = "message" + (sameAuthorContinuation ? " message-continuation" : "");
       article.dataset.messageId = message.id;
+      article.dataset.userId = message.user_id;
       const avatar = document.createElement("div");
       avatar.className = "avatar";
       if (avatarUrl) {
@@ -169,6 +197,7 @@
       author.textContent = name;
       const time = document.createElement("time");
       time.textContent = new Date(message.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+      article.dataset.time = new Date(message.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
       meta.append(author, time);
       if (message.edited_at) {
         const edited = document.createElement("small");
