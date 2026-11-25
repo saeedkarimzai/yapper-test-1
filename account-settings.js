@@ -55,7 +55,19 @@
   const description=document.createElement("p");description.className="settings-view-description";description.textContent=entry.description;
   panel.append(title,description);
 
-  if(entry.id==="devices"){
+  if(entry.id==="account"){
+   const card=document.createElement("section");card.className="account-settings-section settings-info-card";
+   const heading=document.createElement("h4");heading.textContent="Account security";
+   const verification=document.createElement("p");verification.id="settings-email-verification";verification.textContent="Email verification status loads with your account.";
+   const actions=document.createElement("div");actions.className="settings-inline-actions";
+   const copyEmail=document.createElement("button");copyEmail.type="button";copyEmail.textContent="Copy email address";
+   copyEmail.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(S.user?.email||"");say("Email address copied.")}catch{say("Clipboard access is unavailable.",true)}});
+   const resetPassword=document.createElement("button");resetPassword.type="button";resetPassword.textContent="Send password reset email";
+   resetPassword.addEventListener("click",async()=>{if(!S.user?.email)return say("No email address is attached to this account.",true);resetPassword.disabled=true;try{const {error}=await S.db.auth.resetPasswordForEmail(S.user.email,{redirectTo:location.origin+location.pathname});if(error)throw error;say("Password reset email sent. Check your inbox.")}catch(error){say(error.message||String(error),true)}finally{resetPassword.disabled=false}});
+   actions.append(copyEmail,resetPassword);card.append(heading,verification,actions);
+   const note=document.createElement("p");note.className="muted";note.textContent="Two-factor authentication and linked login providers are not configured in this version of Echo.";
+   card.append(note);panel.append(card);
+  } else if(entry.id==="devices"){
    const card=document.createElement("section");card.className="account-settings-section settings-info-card";
    const heading=document.createElement("h4");heading.textContent="Current session";
    const browser=document.createElement("p");browser.id="settings-device-browser";browser.textContent=navigator.userAgent;
@@ -80,6 +92,27 @@
    const edit=document.createElement("button");edit.type="button";edit.id="account-profile-edit";edit.className="primary";edit.textContent="Edit profile";
    edit.addEventListener("click",()=>window.echoOpenProfileEditorFromSettings?.());
    info.append(username,detail,edit);card.append(avatar,info);panel.append(card);
+   const custom=document.createElement("section");custom.className="account-settings-section settings-profile-custom";
+   const customTitle=document.createElement("h4");customTitle.textContent="Profile details";
+   const aboutLabel=document.createElement("label");aboutLabel.textContent="About me";
+   const about=document.createElement("textarea");about.id="settings-profile-about";about.maxLength=190;about.rows=3;about.placeholder="Tell people a little about yourself…";
+   const aboutCount=document.createElement("small");aboutCount.id="settings-profile-about-count";aboutCount.textContent="0 / 190";
+   const pronounsLabel=document.createElement("label");pronounsLabel.textContent="Pronouns";
+   const pronouns=document.createElement("input");pronouns.id="settings-profile-pronouns";pronouns.maxLength=24;pronouns.placeholder="e.g. he / him";
+   const statusLabel=document.createElement("label");statusLabel.textContent="Custom status";
+   const customStatus=document.createElement("input");customStatus.id="settings-profile-status";customStatus.maxLength=64;customStatus.placeholder="What are you up to?";
+   const colorLabel=document.createElement("label");colorLabel.textContent="Profile accent";
+   const color=document.createElement("select");color.id="settings-profile-color";
+   [["#9676ff","Electric purple"],["#4c9dff","Ocean blue"],["#35c9a0","Mint green"],["#ff6b9d","Neon pink"],["#ff9f43","Orange"],["#e5d75b","Gold"]].forEach(([value,label])=>{const option=document.createElement("option");option.value=value;option.textContent=label;color.append(option)});
+   const visibleLabel=document.createElement("label");visibleLabel.className="account-setting-check";
+   const visible=document.createElement("input");visible.type="checkbox";visible.id="settings-profile-show-details";visibleLabel.append(visible,document.createTextNode("Show these details in my profile preview"));
+   const saveCustom=document.createElement("button");saveCustom.type="button";saveCustom.className="primary";saveCustom.textContent="Save profile details";
+   const copyUsername=document.createElement("button");copyUsername.type="button";copyUsername.textContent="Copy my username";
+   saveCustom.id="settings-profile-save";
+   copyUsername.id="settings-profile-copy-username";
+   const resetCustom=document.createElement("button");resetCustom.type="button";resetCustom.id="settings-profile-reset";resetCustom.textContent="Reset profile details";
+   const customStatusNote=document.createElement("p");customStatusNote.className="muted";customStatusNote.textContent="About me, pronouns, status and accent are currently saved only in this browser. They are not synced to other devices or shown to other members.";
+   custom.append(customTitle,aboutLabel,about,aboutCount,pronounsLabel,pronouns,statusLabel,customStatus,colorLabel,color,visibleLabel,saveCustom,copyUsername,resetCustom,customStatusNote);panel.append(custom);
    const note=document.createElement("p");note.className="settings-profile-note";note.textContent="Profile pictures support PNG, JPG, WEBP and GIF files up to 2 MB.";panel.append(note);
   } else {
    const selected=settingsSections.filter(section=>entry.match.some(name=>sectionFor(section).includes(name)));
@@ -108,6 +141,34 @@
   detail.textContent=profile?.avatar_url?"Your profile picture is visible beside your messages, in member lists, friends and private messages.":"Add a profile picture so people can recognize you around Echo.";
   const edit=$("account-profile-edit");if(edit)edit.disabled=!profile;
  }
+ const PROFILE_CUSTOM_KEY="echo-profile-customization-v1";
+ const profileCustomDefaults={about:"",pronouns:"",status:"",color:"#9676ff",showDetails:true};
+ function readProfileCustom(){try{return {...profileCustomDefaults,...JSON.parse(localStorage.getItem(PROFILE_CUSTOM_KEY)||"{}")}}catch{return {...profileCustomDefaults}}}
+ function paintProfileCustom(){
+  const data=readProfileCustom();
+  const about=$("settings-profile-about"),pronouns=$("settings-profile-pronouns"),customStatus=$("settings-profile-status"),color=$("settings-profile-color"),visible=$("settings-profile-show-details");
+  if(!about)return;
+  about.value=data.about;pronouns.value=data.pronouns;customStatus.value=data.status;color.value=data.color;visible.checked=data.showDetails;
+  $("settings-profile-about-count").textContent=data.about.length+" / 190";
+  const detail=$("settings-profile-detail");
+  if(detail){const bits=data.showDetails?[data.pronouns,data.status].filter(Boolean):[];detail.textContent=bits.length?bits.join(" · "):(S.profile?.avatar_url?"Your profile picture appears beside your messages, in member lists, friends and private messages.":"Add a profile picture so people can recognize you around Echo.");}
+  const card=$("settings-profile-avatar")?.closest(".settings-profile-card");
+  if(card)card.style.setProperty("--profile-accent",data.color);
+ }
+ function saveProfileCustom(){
+  const data={about:$("settings-profile-about").value.trim(),pronouns:$("settings-profile-pronouns").value.trim(),status:$("settings-profile-status").value.trim(),color:$("settings-profile-color").value,showDetails:$("settings-profile-show-details").checked};
+  try{localStorage.setItem(PROFILE_CUSTOM_KEY,JSON.stringify(data));paintProfileCustom();say("Profile details saved on this device.")}catch{say("Could not save profile details in this browser.",true)}
+ }
+ $("settings-profile-about")?.addEventListener("input",()=>{$("settings-profile-about-count").textContent=$("settings-profile-about").value.length+" / 190"});
+ $("settings-profile-about")?.addEventListener("change",saveProfileCustom);
+ $("settings-profile-pronouns")?.addEventListener("change",saveProfileCustom);
+ $("settings-profile-status")?.addEventListener("change",saveProfileCustom);
+ $("settings-profile-color")?.addEventListener("change",saveProfileCustom);
+ $("settings-profile-show-details")?.addEventListener("change",saveProfileCustom);
+ $("settings-profile-save")?.addEventListener("click",saveProfileCustom);
+ $("settings-profile-about")?.parentElement?.querySelector("button");
+ $("settings-profile-copy-username")?.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(S.profile?.username||"");say("Username copied.")}catch{say("Clipboard access is unavailable.",true)}});
+ $("settings-profile-reset")?.addEventListener("click",()=>{if(!confirm("Reset your local profile details?"))return;localStorage.removeItem(PROFILE_CUSTOM_KEY);paintProfileCustom();say("Local profile details reset.")});
  window.echoRefreshSettingsProfile=refreshSettingsProfile;
  window.echoOpenProfileEditorFromSettings=()=>{
   if(typeof S==="undefined"||!S.profile){say("Your profile is still loading.",true);return;}
@@ -303,6 +364,8 @@
   }
   $("account-new-email").value="";$("account-password").value="";$("account-password-confirm").value="";
   refreshSettingsProfile(typeof S!=="undefined"?S.profile:null);
+  paintProfileCustom();
+  const verification=$("settings-email-verification");if(verification&&typeof S!=="undefined"&&S.user)verification.textContent=S.user.email_confirmed_at?"Email address verified.":"Email address is not confirmed yet.";
   search.value="";Object.values(navGroups).forEach(group=>group.hidden=false);activateSettingsTab("account");
   loadPrefs();say("");
  }
