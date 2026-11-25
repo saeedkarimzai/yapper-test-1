@@ -382,16 +382,16 @@ document.addEventListener("keydown",event=>{
 
 const SERVER_PREFS=[
  ["Display",[
- ["compactChannels","Compact channel list"],["showChannelCounts","Show channel count badges"],["showServerDescriptions","Show server descriptions"],["highlightMentions","Highlight @mentions"],["dimMutedChannels","Dim muted channels"],["showMemberAvatars","Show member avatars"],["showTimestamps","Show message timestamps"],["showEditedLabels","Show edited labels"],["showLinkPreviews","Show link previews"],["reduceServerAnimations","Reduce server animations"]
+ ["compactChannels","Compact channel list"],["showChannelCounts","Show channel count in heading"],["showServerDescriptions","Show server descriptions"],["highlightMentions","Highlight @mentions"],["dimMutedChannels","Dim muted channels"],["showMemberAvatars","Show member avatars"],["showTimestamps","Show message timestamps"],["showEditedLabels","Show edited labels"],["showLinkPreviews","Show link previews"],["reduceServerAnimations","Reduce server animations"]
  ]],
  ["Notifications",[
- ["notifyMessages","Notify for new messages"],["notifyMentions","Notify for mentions"],["notifyReplies","Notify for replies"],["notifyInvites","Notify about invite activity"],["notificationSound","Play notification sounds"],["desktopAlerts","Allow desktop alerts"],["quietMode","Quiet mode"],["muteWhenFocused","Mute alerts while this server is open"]
+ ["notifyMessages","Notify for new messages"],["notifyMentions","Notify for mentions"],["notifyReplies","Notify about replies (not available yet)"],["notifyInvites","Notify about invite activity (not available yet)"],["notificationSound","Play notification sounds"],["desktopAlerts","Allow desktop alerts"],["quietMode","Quiet mode"],["muteWhenFocused","Mute alerts while this server is open"]
  ]],
  ["Privacy & safety",[
- ["hideOnlineStatus","Hide my online status in this server"],["hideActivity","Hide my activity"],["filterUnknownLinks","Warn about unfamiliar links"],["blurSensitiveMedia","Blur sensitive media"],["hideEmbeds","Hide link embeds"],["confirmExternalLinks","Confirm before opening external links"],["filterProfanity","Filter offensive words"],["limitDirectMessages","Limit messages from non-friends"]
+ ["hideOnlineStatus","Hide my online status in this server"],["hideActivity","Hide my profile activity (not available yet)"],["filterUnknownLinks","Warn about unfamiliar links"],["blurSensitiveMedia","Blur sensitive media"],["hideEmbeds","Hide link embeds"],["confirmExternalLinks","Confirm before opening external links"],["filterProfanity","Filter offensive words (not available yet)"],["limitDirectMessages","Keep private messages friends-only (required)"]
  ]],
  ["Chat experience",[
- ["enterToSend","Enter sends messages"],["ctrlEnterNewline","Ctrl + Enter inserts a line break"],["spellcheck","Spellcheck messages"],["autoScroll","Auto-scroll to newest messages"],["rememberChannel","Remember last opened channel"],["showTyping","Show typing indicators"],["showReactions","Show message reactions"],["showPinnedFirst","Keep pinned items easy to spot"]
+ ["enterToSend","Enter sends messages"],["ctrlEnterNewline","Ctrl + Enter inserts a line break"],["spellcheck","Spellcheck messages"],["autoScroll","Auto-scroll to newest messages"],["rememberChannel","Remember last opened channel"],["showTyping","Show typing indicators"],["showReactions","Show message reactions"],["showPinnedFirst","Show pinned messages first (not available yet)"]
  ]],
  ["Server tools",[
  ["confirmInvites","Confirm before creating invite links"],["copyInviteAutomatically","Copy invite links automatically"],["showServerId","Show server ID in settings"],["confirmLeave","Confirm before leaving"],["warnBeforeDelete","Warn before destructive actions"],["showServerCreationDate","Show server creation date"],["showRoleLabels","Show member role labels"],["enableQuickSwitch","Enable quick server switching"],["rememberSearch","Remember server search"],["showWelcomeTips","Show server tips"]
@@ -427,6 +427,17 @@ function applyServerPreferenceUI(){
  root.classList.toggle("yapper-server-reduced-motion",!!prefs.reduceServerAnimations);
  root.classList.toggle("yapper-server-highlight-mentions",!!prefs.highlightMentions);
  root.classList.toggle("yapper-server-hide-reactions",!prefs.showReactions);
+ const serverIdInfo=$("server-id-info");
+ if(serverIdInfo){
+  serverIdInfo.textContent=prefs.showServerId?"Server ID: "+(S.server?.id||""):"";
+  serverIdInfo.classList.toggle("hidden",!prefs.showServerId);
+ }
+ const serverCreatedInfo=$("server-created-info");
+ if(serverCreatedInfo){
+  const date=S.server?.created_at?new Date(S.server.created_at).toLocaleDateString([],{year:"numeric",month:"long",day:"numeric"}):"Unknown";
+  serverCreatedInfo.textContent=prefs.showServerCreationDate?"Created "+date:"";
+  serverCreatedInfo.classList.toggle("hidden",!prefs.showServerCreationDate);
+ }
  const subtitle=$("server-subtitle");
  if(subtitle)subtitle.textContent=prefs.showServerDescriptions&&S.server?.description?S.server.description:"YOUR COMMUNITY";
  const channelHeading=$("channel-section-title");
@@ -446,6 +457,16 @@ function renderServerPrefs(){
    const row=document.createElement("label");row.className="server-pref-row";
    const copy=document.createElement("span");copy.textContent=label;
    const input=document.createElement("input");input.type="checkbox";input.checked=!!prefs[key];input.dataset.pref=key;
+   const unavailablePrefs=new Set(["hideActivity","notifyReplies","notifyInvites","filterProfanity","showPinnedFirst"]);
+   const enforcedPrefs=new Set(["limitDirectMessages"]);
+   if(unavailablePrefs.has(key)||enforcedPrefs.has(key)){
+    input.disabled=true;
+    row.title=enforcedPrefs.has(key)?"Echo keeps private messages limited to accepted friends.":"This setting will become available when Echo has the matching feature.";
+    const status=document.createElement("small");
+    status.className="server-pref-availability";
+    status.textContent=enforcedPrefs.has(key)?"Required":"Not available yet";
+    copy.append(status);
+   }
    input.addEventListener("change",async()=>{
     if(key==="desktopAlerts"&&input.checked&&"Notification" in window&&Notification.permission!=="granted"){
      try{
@@ -458,6 +479,8 @@ function renderServerPrefs(){
      localStorage.setItem(serverPrefsKey(S.server.id),JSON.stringify(current));
      applyServerPreferenceUI();
      if(key==="hideOnlineStatus")window.echoUpdatePresencePreferences?.();
+     if(key==="dimMutedChannels")renderChannels();
+     if(["showTimestamps","showEditedLabels","showLinkPreviews","highlightMentions","showReactions","showMemberAvatars","showTyping","blurSensitiveMedia","hideEmbeds"].includes(key))window.renderMessages?.();
      const status=$("server-preferences-status");
      if(status)status.textContent="Saved automatically on this device · "+new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
     }catch(error){toast("Could not save this preference: "+(error.message||error));}
