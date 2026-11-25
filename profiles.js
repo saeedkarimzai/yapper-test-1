@@ -64,6 +64,7 @@
     paint(avatar, "own");
     const preview = document.getElementById("profile-preview");
     if (preview && !document.getElementById("profile-modal").open) paint(preview, "preview");
+    if (typeof window.echoRefreshSettingsProfile === "function") window.echoRefreshSettingsProfile(S.profile);
   }
 
   function startPresence() {
@@ -347,6 +348,14 @@
   });
 
   document.getElementById("profile-cancel").addEventListener("click", () => document.getElementById("profile-modal").close());
+  const profileDialog = document.getElementById("profile-modal");
+  profileDialog.addEventListener("close", () => {
+    if (!window.echoReturnToSettingsAfterProfile) return;
+    window.echoReturnToSettingsAfterProfile = false;
+    if (typeof window.echoReopenSettingsAfterProfile === "function") {
+      queueMicrotask(() => window.echoReopenSettingsAfterProfile());
+    }
+  });
   profileFile.addEventListener("change", () => {
     const file = profileFile.files[0];
     if (!file) return;
