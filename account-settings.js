@@ -72,7 +72,18 @@
  function applyPrefs(p=readPrefs()){
   const root=document.documentElement;
   const favicon=document.querySelector("link[rel~='icon']");
-  if(favicon){const icons={echo:"<path d='M76 24H42Q30 24 30 36V64Q30 76 42 76H76M40 50H66' fill='none' stroke='#c18aff' stroke-width='10' stroke-linecap='round'/>",purple:"<text x='50%' y='70%' text-anchor='middle' font-size='72' font-weight='bold' fill='#b58aff'>E</text>",blue:"<text x='50%' y='70%' text-anchor='middle' font-size='72' font-weight='bold' fill='#62b7ff'>E</text>",pink:"<text x='50%' y='70%' text-anchor='middle' font-size='72' font-weight='bold' fill='#ff83c8'>E</text>",black:"<text x='50%' y='70%' text-anchor='middle' font-size='72' font-weight='bold' fill='#ffffff'>E</text>"};const art=p.customTabIcon||("data:image/svg+xml,"+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='#171027'/>"+(icons[p.tabIcon]||icons.echo)+"</svg>"));favicon.href=art;favicon.type=art.startsWith("data:image/")&&!art.startsWith("data:image/svg+xml")?"image/png":"image/svg+xml";}
+  if(favicon){
+   const colors={echo:"#c18aff",purple:"#b58aff",blue:"#62b7ff",pink:"#ff83c8",black:"#ffffff"};
+   if(p.customTabIcon){
+    favicon.href=p.customTabIcon;
+    favicon.type=p.customTabIcon.startsWith("data:image/svg+xml")?"image/svg+xml":"image/png";
+   }else{
+    const color=colors[p.tabIcon]||colors.echo;
+    const svg="<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='bg' x2='1' y2='1'><stop stop-color='#30204c'/><stop offset='1' stop-color='#100b1d'/></linearGradient></defs><rect x='3' y='3' width='94' height='94' rx='25' fill='url(#bg)' stroke='"+color+"' stroke-width='5'/><path d='M72 21H36V79H72V65H51V57H68V43H51V35H72Z' fill='"+color+"'/><circle cx='76' cy='83' r='3' fill='#f3ddff'/></svg>";
+    favicon.href="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
+    favicon.type="image/svg+xml";
+   }
+  }
   root.dataset.theme=p.theme;
   root.style.setProperty("--purple",p.accent);
   root.style.setProperty("--yapper-message-size",p.fontSize+"px");
