@@ -19,12 +19,16 @@
   function profileAvatar(profile) {
     const avatar = document.createElement("div");
     avatar.className = "friend-avatar";
+    const username = profile?.username || "Unknown user";
     if (profile?.avatar_url) {
       const img = document.createElement("img");
       img.src = profile.avatar_url;
       img.alt = "";
+      img.loading = "lazy";
+      img.onerror = () => { avatar.textContent = username.charAt(0).toUpperCase(); };
       avatar.append(img);
-    } else avatar.textContent = (profile?.username || "?").slice(0, 1).toUpperCase();
+    } else avatar.textContent = username.slice(0, 1).toUpperCase();
+    avatar.title = "@" + username;
     return avatar;
   }
   function makeButton(label, cls, action) {
