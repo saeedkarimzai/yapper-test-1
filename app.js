@@ -65,6 +65,22 @@ function setupAuth(){
   $("auth-switch-row").classList.remove("hidden");clearFeedback();
  };
  $("switch").onclick=setMode;
+ const googleButton=$("google-signin");
+ if(googleButton)googleButton.onclick=async()=>{
+  googleButton.disabled=true;googleButton.classList.add("loading");
+  const label=googleButton.querySelector("span");if(label)label.textContent="Connecting to Google…";
+  clearFeedback();
+  try{
+   const {error}=await S.db.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+location.pathname}});
+   if(error)throw error;
+  }catch(error){
+   const message=err(error);
+   if(/provider is not enabled|unsupported provider|google.*disabled/i.test(message))setAuthFeedback("Google sign-in isn't enabled yet. Finish the Google provider setup in Supabase Authentication → Providers, then try again.","error");
+   else if(/redirect.*not allowed|not whitelisted/i.test(message))setAuthFeedback("Add this site to Supabase Authentication → URL Configuration: "+location.origin+location.pathname,"error");
+   else setAuthFeedback(message,"error");
+   googleButton.disabled=false;googleButton.classList.remove("loading");if(label)label.textContent="Continue with Google";
+  }
+ };
  document.querySelectorAll("[data-password-toggle]").forEach(button=>button.addEventListener("click",()=>{
   const input=$(button.dataset.passwordToggle);const visible=input.type==="password";
   input.type=visible?"text":"password";button.textContent=visible?"Hide":"Show";
