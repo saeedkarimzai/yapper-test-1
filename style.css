@@ -322,3 +322,20 @@ html[data-theme="light"] .settings-search::placeholder{color:#777d90}
 
 /* Custom Echo identity */
 .brand{display:flex;align-items:center}.brand-logo{display:block;width:220px;max-width:100%;height:auto}.mark{padding:0;overflow:hidden;background:transparent}.rail-logo{width:100%;height:100%;object-fit:contain;border-radius:inherit}@media(max-width:620px){.brand-logo{width:190px}}
+
+/* Server management */
+.server-head-actions{display:flex;align-items:center;gap:6px}
+#server-settings-open{min-width:30px;padding:7px 8px;font-size:14px}
+.server-settings-modal{width:min(92vw,440px);max-height:88vh;overflow:auto}
+.server-settings-modal label{display:block;margin:12px 0 6px;font-size:12px;font-weight:700}
+.server-settings-modal input{width:100%;box-sizing:border-box;padding:11px;background:#17181f;border:1px solid #41434f;border-radius:8px;color:#fff;margin-bottom:10px}
+.server-settings-modal input:disabled{opacity:.65}
+.server-settings-modal .primary,#server-settings-invite{border:0;border-radius:7px;padding:10px 13px;background:#5865f2;color:#fff;font-weight:700;font-size:12px}
+.server-settings-section{margin-top:18px;padding:14px;background:#23252b;border:1px solid #383a42;border-radius:10px}
+.server-settings-section h3{font-size:13px;margin:0 0 5px}
+.server-settings-section p{margin:4px 0 12px}
+.server-leave-section{border-color:#70434a}
+#server-leave-button{border:1px solid #9b4d58;background:#49272e;color:#ffbdc5;border-radius:7px;padding:9px 12px;font-weight:700;font-size:12px}
+#server-leave-button:disabled{opacity:.45;cursor:not-allowed}
+.server-settings-modal .muted{font-size:11px;line-height:1.5}
+@media(max-width:620px){.side header{padding:0 10px}.server-head-actions{gap:4px}}
