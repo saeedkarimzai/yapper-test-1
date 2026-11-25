@@ -67,7 +67,7 @@
       const filter="and(sender_id.eq."+userId+",recipient_id.eq."+peerId+"),and(sender_id.eq."+peerId+",recipient_id.eq."+userId+")";
       const r=await S.db.from("direct_messages").select("id,sender_id,recipient_id,content,created_at").or(filter).order("created_at",{ascending:true}).limit(100);
       if(r.error)throw r.error;await render(r.data||[]);
-      const accept=m=>{if(peerId&&(m.sender_id===peerId||m.recipient_id===peerId))render([m],true).catch(x=>note(x.message||String(x),true));};
+      const accept=m=>{if(peerId&&(m.sender_id===peerId||m.recipient_id===peerId)){render([m],true).catch(x=>note(x.message||String(x),true));if(m.sender_id!==userId&&typeof window.yapperNotifyIncoming==="function")window.yapperNotifyIncoming(m,{direct:true,senderName:peerName});}};
       sub=S.db.channel("yapper-dm-"+userId+"-"+peerId+"-"+Date.now())
         .on("postgres_changes",{event:"INSERT",schema:"public",table:"direct_messages",filter:"sender_id=eq."+userId},p=>accept(p.new))
         .on("postgres_changes",{event:"INSERT",schema:"public",table:"direct_messages",filter:"recipient_id=eq."+userId},p=>accept(p.new))
