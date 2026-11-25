@@ -1367,3 +1367,7 @@ html[data-theme="light"] .server-pref-availability{color:#757d9d}
 .side .actions{position:relative;z-index:5;pointer-events:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
 .side .actions>button{position:relative;z-index:6;pointer-events:auto;touch-action:manipulation;min-width:0;cursor:pointer}
 .side .actions #open-friends,.side .actions #open-dms{grid-column:1/-1}
+
+/* The Echo logo is a real navigation button, not a decorative dead-end. */
+.rail .mark{display:grid;place-items:center;flex:none;border:0;cursor:pointer;color:inherit;appearance:none;-webkit-appearance:none;}
+.rail .mark:focus-visible{outline:2px solid #bda7ff;outline-offset:3px}
