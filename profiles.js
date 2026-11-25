@@ -105,13 +105,19 @@
 
   async function loadMembers() {
     if (!S.server) return;
-    const result = await S.db.from("server_members").select("user_id").eq("server_id", S.server.id);
+    const result = await S.db.from("server_members").select("user_id,role,created_at").eq("server_id", S.server.id);
     if (result.error) throw result.error;
-    const ids = (result.data || []).map(row => row.user_id);
+    const memberships = result.data || [];
+    const ids = memberships.map(row => row.user_id);
     if (!ids.length) { S.memberProfiles = []; renderMembers(); return; }
     const profiles = await S.db.from("profiles").select("id,username,avatar_url").in("id", ids);
     if (profiles.error) throw profiles.error;
-    S.memberProfiles = profiles.data || [];
+    const membershipsById = Object.fromEntries(memberships.map(row => [row.user_id, row]));
+    S.memberProfiles = (profiles.data || []).map(profile => ({
+      ...profile,
+      role: membershipsById[profile.id]?.role || "member",
+      joined_at: membershipsById[profile.id]?.created_at || null
+    }));
     S.memberProfiles.forEach(p => { S.profiles[p.id] = p; });
     renderMembers();
   }
@@ -126,11 +132,14 @@
       root.textContent = "Choose a server to see its members.";
       return;
     }
+    const serverPreferences = window.echoGetServerPrefs?.(S.server.id) || {};
+    const isOnline = profile => S.onlineIds.has(profile.id) &&
+      !(profile.id === S.user?.id && serverPreferences.hideOnlineStatus);
     const people = S.memberProfiles.slice().sort((a, b) =>
-      Number(S.onlineIds.has(b.id)) - Number(S.onlineIds.has(a.id)) || a.username.localeCompare(b.username)
+      Number(isOnline(b)) - Number(isOnline(a)) || a.username.localeCompare(b.username)
     );
-    const online = people.filter(profile => S.onlineIds.has(profile.id));
-    const offline = people.filter(profile => !S.onlineIds.has(profile.id));
+    const online = people.filter(isOnline);
+    const offline = people.filter(profile => !isOnline(profile));
     if (count) count.textContent = String(people.length);
     if (!people.length) {
       const empty = document.createElement("p");
@@ -164,7 +173,8 @@
         const username = document.createElement("b");
         username.textContent = profile.username;
         const status = document.createElement("small");
-        status.textContent = isOnline ? "Online" : "Offline";
+        const roleLabel = serverPreferences.showRoleLabels && profile.role ? " · " + (profile.role === "owner" ? "Owner" : "Member") : "";
+      status.textContent = (isOnline ? "Online" : "Offline") + roleLabel;
         status.className = isOnline ? "status-online" : "status-offline";
         const dot = document.createElement("i");
         dot.className = "presence-dot" + (isOnline ? " online" : "");
@@ -211,7 +221,12 @@
       const sameAuthorContinuation = !!previous &&
         previous.user_id === message.user_id &&
         (new Date(message.created_at).getTime() - new Date(previous.created_at).getTime()) < 5 * 60 * 1000;
-      article.className = "message" + (sameAuthorContinuation ? " message-continuation" : "");
+      const serverPreferences = window.echoGetServerPrefs?.(S.server?.id) || {};
+      const currentUsername = String(S.profile?.username || "").toLowerCase();
+      const messageContent = String(message.content || "").toLowerCase();
+      const hasMention = !!currentUsername && serverPreferences.highlightMentions &&
+        (messageContent.includes("@"+currentUsername) || messageContent.includes("@everyone"));
+      article.className = "message" + (sameAuthorContinuation ? " message-continuation" : "") + (hasMention ? " message-mention" : "");
       article.dataset.messageId = message.id;
       article.dataset.userId = message.user_id;
       const avatar = document.createElement("div");
@@ -291,7 +306,8 @@
       article.append(avatar, body);
       root.append(article);
     });
-    root.scrollTop = root.scrollHeight;
+    const messagePreferences = window.echoGetServerPrefs?.(S.server?.id) || {};
+    if (messagePreferences.autoScroll !== false) root.scrollTop = root.scrollHeight;
     hydrateMessageProfiles().then(() => {
       if (S.messages.some(m => !S.profiles[m.user_id])) return;
       // Re-render once profile data has been fetched.
@@ -317,6 +333,21 @@
     };
   }
 
+  document.addEventListener("click", event => {
+    const anchor = event.target.closest(".message-text a, .dm-message-content a");
+    if (!anchor) return;
+    const preferences = window.echoGetServerPrefs?.(S.server?.id) || {};
+    if (!preferences.confirmExternalLinks && !preferences.filterUnknownLinks) return;
+    let destination;
+    try { destination = new URL(anchor.href, location.href); } catch { return; }
+    if (destination.origin === location.origin) return;
+    event.preventDefault();
+    if (window.confirm("You're opening an external link: " + destination.hostname + ". Continue?")) {
+      window.open(destination.href, "_blank", "noopener,noreferrer");
+    }
+  });
+
+  const editButton = document.getElementById("edit-profile");
   let removeAvatarRequested = false;
   const profileFile = document.getElementById("profile-file");
   const profilePreview = document.getElementById("profile-preview");
