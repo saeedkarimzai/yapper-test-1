@@ -71,7 +71,8 @@
  function writePrefs(p){localStorage.setItem(PREF_KEY,JSON.stringify(p))}
  function applyPrefs(p=readPrefs()){
   const root=document.documentElement;
-  // One consistent Echo logo is used for the browser tab.\n  root.dataset.theme=p.theme;
+  // One consistent Echo logo is used for the browser tab.
+  root.dataset.theme=p.theme;
   root.style.setProperty("--purple",p.accent);
   root.style.setProperty("--yapper-message-size",p.fontSize+"px");
   root.style.setProperty("--yapper-font-family",JSON.stringify(p.fontFamily));
