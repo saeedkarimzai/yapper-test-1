@@ -1299,3 +1299,6 @@ html.yapper-server-hide-reactions .reaction-picker{display:none!important}
 .server-pref-row input:disabled{opacity:.35;cursor:not-allowed}
 .server-pref-row:has(input:disabled){opacity:.76}
 html[data-theme="light"] .server-pref-availability{color:#757d9d}
+
+/* Expanded Discord-style user settings pages */
+.settings-info-card{display:grid;gap:12px}.settings-info-card h4{margin:0;font-size:15px}.settings-info-card p{margin:0;overflow-wrap:anywhere}.settings-info-card button{justify-self:start}.settings-info-card #settings-device-browser{font-size:12px;opacity:.75;max-height:72px;overflow:auto}
