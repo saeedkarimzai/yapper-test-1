@@ -63,7 +63,7 @@
   theme:"dark",accent:"#9676ff",fontFamily:"DM Sans",fontSize:13,lineHeight:1.6,messageWidth:100,
   compact:false,compactSidebar:false,hideMembers:false,showAvatars:true,showTimestamps:true,
   showTyping:true,showGifs:true,enterSend:true,sound:false,desktopNotifications:false,
-  reducedMotion:false,highContrast:false,confirmSignout:true,tabIcon:"echo",customTabIcon:""
+  reducedMotion:false,highContrast:false,confirmSignout:true
  };
  const $status=$("setting-notification-status");
  const say=(message,bad=false)=>{status.textContent=message;status.classList.toggle("error",bad)};
@@ -71,20 +71,7 @@
  function writePrefs(p){localStorage.setItem(PREF_KEY,JSON.stringify(p))}
  function applyPrefs(p=readPrefs()){
   const root=document.documentElement;
-  const favicon=document.querySelector("link[rel~='icon']");
-  if(favicon){
-   const colors={echo:"#c18aff",purple:"#b58aff",blue:"#62b7ff",pink:"#ff83c8",black:"#ffffff"};
-   if(p.customTabIcon){
-    favicon.href=p.customTabIcon;
-    favicon.type=p.customTabIcon.startsWith("data:image/svg+xml")?"image/svg+xml":"image/png";
-   }else{
-    const color=colors[p.tabIcon]||colors.echo;
-    const svg="<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='bg' x2='1' y2='1'><stop stop-color='#30204c'/><stop offset='1' stop-color='#100b1d'/></linearGradient></defs><rect x='3' y='3' width='94' height='94' rx='25' fill='url(#bg)' stroke='"+color+"' stroke-width='5'/><path d='M72 21H36V79H72V65H51V57H68V43H51V35H72Z' fill='"+color+"'/><circle cx='76' cy='83' r='3' fill='#f3ddff'/></svg>";
-    favicon.href="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
-    favicon.type="image/svg+xml";
-   }
-  }
-  root.dataset.theme=p.theme;
+  // One consistent Echo logo is used for the browser tab.\n  root.dataset.theme=p.theme;
   root.style.setProperty("--purple",p.accent);
   root.style.setProperty("--yapper-message-size",p.fontSize+"px");
   root.style.setProperty("--yapper-font-family",JSON.stringify(p.fontFamily));
@@ -111,8 +98,7 @@
    showGifs:$("setting-show-gifs").checked,enterSend:$("setting-enter-send").checked,
    sound:$("setting-sound").checked,desktopNotifications:$("setting-desktop-notifications").checked,
    reducedMotion:$("setting-reduced-motion").checked,highContrast:$("setting-high-contrast").checked,
-   confirmSignout:$("setting-confirm-signout").checked,
-   tabIcon:$("setting-tab-icon").value,customTabIcon:readPrefs().customTabIcon||""
+   confirmSignout:$("setting-confirm-signout").checked
   };
  }
  function updateLabels(p){
@@ -134,7 +120,7 @@
    "setting-show-avatars":"showAvatars","setting-show-timestamps":"showTimestamps","setting-show-typing":"showTyping",
    "setting-show-gifs":"showGifs","setting-enter-send":"enterSend","setting-sound":"sound",
    "setting-desktop-notifications":"desktopNotifications","setting-reduced-motion":"reducedMotion",
-   "setting-high-contrast":"highContrast","setting-confirm-signout":"confirmSignout","setting-tab-icon":"tabIcon"
+   "setting-high-contrast":"highContrast","setting-confirm-signout":"confirmSignout"
   };
   for(const [id,key] of Object.entries(map)){const el=$(id);if(el){if(el.type==="checkbox")el.checked=!!p[key];else el.value=String(key==="lineHeight"?Math.round(p[key]*10):p[key]);}}
   updateLabels(p);applyPrefs(p);
@@ -173,12 +159,9 @@
   loadPrefs();say("");
  }
  $("account-settings-close").addEventListener("click",()=>dialog.close());
- const settingIds=["setting-theme","setting-accent","setting-font-family","setting-font-size","setting-line-height","setting-message-width","setting-compact","setting-compact-sidebar","setting-hide-members","setting-show-avatars","setting-show-timestamps","setting-show-typing","setting-show-gifs","setting-enter-send","setting-sound","setting-desktop-notifications","setting-reduced-motion","setting-high-contrast","setting-confirm-signout","setting-tab-icon"];
+ const settingIds=["setting-theme","setting-accent","setting-font-family","setting-font-size","setting-line-height","setting-message-width","setting-compact","setting-compact-sidebar","setting-hide-members","setting-show-avatars","setting-show-timestamps","setting-show-typing","setting-show-gifs","setting-enter-send","setting-sound","setting-desktop-notifications","setting-reduced-motion","setting-high-contrast","setting-confirm-signout"];
  settingIds.forEach(id=>{const el=$(id);el.addEventListener("input",savePrefs);el.addEventListener("change",savePrefs)});
  $("account-reset-preferences").addEventListener("click",()=>{try{localStorage.removeItem(PREF_KEY)}catch{}loadPrefs();say("All app preferences reset.")});
- const tabIconUpload=$("setting-tab-icon-upload");
- if(tabIconUpload)tabIconUpload.addEventListener("change",()=>{const file=tabIconUpload.files?.[0];if(!file)return;if(!/^image\\/(png|jpeg|webp|svg\\+xml)$/.test(file.type)||file.size>256*1024){say("Choose a PNG, JPG, WEBP or SVG under 256 KB.",true);tabIconUpload.value="";return;}const reader=new FileReader();reader.onload=()=>{const p=readPrefs();p.customTabIcon=String(reader.result);p.tabIcon="custom";writePrefs(p);$("setting-tab-icon").value="custom";applyPrefs(p);say("Browser tab logo updated.");};reader.readAsDataURL(file);});
- $("setting-tab-icon").addEventListener("change",()=>{const p=readPrefs();p.tabIcon=$("setting-tab-icon").value;if(p.tabIcon!=="custom")p.customTabIcon="";writePrefs(p);applyPrefs(p);say("Browser tab logo updated.");});
  $("account-export-preferences").addEventListener("click",()=>{
   const blob=new Blob([JSON.stringify(readPrefs(),null,2)],{type:"application/json"});
   const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="yapper-settings.json";a.click();URL.revokeObjectURL(url);say("Settings export downloaded.");
