@@ -1005,3 +1005,49 @@ html[data-theme="light"] .settings-main-footer{border-color:#d8d8ec}
 html[data-theme="light"] .settings-view .account-settings-section,html[data-theme="light"] .settings-view .account-settings-danger{background:#fff;border-color:#d8d8ec}
 html[data-theme="light"] .settings-view .account-settings-section h3,html[data-theme="light"] .settings-view .account-setting-check{color:#303253}
 html[data-theme="light"] .server-settings-section,html[data-theme="light"] .social-panel,html[data-theme="light"] .friend-row{background:#fff;border-color:#d6d8ee}
+
+/* Profile pictures throughout Echo */
+.profile-preview{
+ width:112px;height:112px;border-radius:50%;margin:16px auto;
+ border:4px solid #a78bfa;box-shadow:0 0 0 6px #8d6bff18,0 8px 28px #0006,0 0 34px #8a6bff66;
+ font-size:36px;background:linear-gradient(135deg,#9a66ff,#4c94db 58%,#3ec5bd);
+ color:#fff;
+}
+.profile-preview img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.profile-picture-actions{display:flex;align-items:center;justify-content:center;gap:9px;margin:0 0 16px}
+.profile-upload-label,.profile-remove-picture{
+ display:inline-flex;align-items:center;justify-content:center;min-height:36px;
+ padding:8px 13px;border:1px solid #7564b6;border-radius:8px;
+ background:linear-gradient(120deg,#59418d,#344a79);color:#fff;
+ font-size:12px;font-weight:700;cursor:pointer;
+}
+.profile-upload-label:hover,.profile-remove-picture:hover{filter:brightness(1.2);box-shadow:0 4px 16px #8062ff44}
+.profile-remove-picture{background:#4e2e4c;border-color:#a05c8e;color:#ffd5ee}
+#profile-file{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+#profile-modal .muted{text-align:center}
+.avatar.has-image,.member-avatar,.friend-avatar,.dm-peer-avatar,.dm-message-avatar{
+ overflow:hidden;position:relative;display:grid;place-items:center;flex:0 0 auto;
+}
+.avatar.has-image img,.member-avatar img,.friend-avatar img,.dm-peer-avatar img,.dm-message-avatar img{
+ display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit;
+}
+.member-avatar,.friend-avatar,.dm-peer-avatar,.dm-message-avatar{border-radius:50%}
+.member-avatar{width:34px;height:34px}
+.friend-avatar{width:40px;height:40px}
+.friend-row{align-items:center}
+.dm-active-heading{display:flex;align-items:center;gap:11px;margin:0 0 12px}
+.dm-active-heading h3{margin:0;font-size:14px;color:#f4f2ff}
+.dm-peer-avatar{width:42px;height:42px;border:2px solid #a78bfa;background:linear-gradient(135deg,#9a66ff,#4c94db);color:#fff;font-size:15px;font-weight:800;box-shadow:0 0 0 4px #8d6bff20}
+.dm-messages{gap:8px}
+.dm-message-row{display:flex;align-items:flex-start;gap:10px;padding:9px 10px}
+.dm-message-avatar{width:34px;height:34px;min-width:34px;background:linear-gradient(135deg,#9364ff,#4c93d8);color:#fff;font-size:12px;font-weight:800}
+.dm-message-main{min-width:0;flex:1}
+.dm-message-content{margin-top:3px}
+.message .avatar.has-image{overflow:hidden}
+.member-row .member-avatar,.friend-row .friend-avatar{box-shadow:0 0 0 2px #9b80ff2b,0 3px 12px #0004}
+@media(max-width:620px){
+ .profile-picture-actions{flex-wrap:wrap}
+ .dm-message-row{padding:8px 7px}
+}
+html[data-theme="light"] .dm-active-heading h3{color:#303253}
+html[data-theme="light"] .profile-upload-label{color:#fff}
