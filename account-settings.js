@@ -14,7 +14,9 @@
  const entries=[
   {id:"account",label:"My Account",group:"USER SETTINGS",description:"Your account details, login methods and session controls.",match:["Account information","Change email","Change password","Session"]},
   {id:"profile",label:"Profile",group:"USER SETTINGS",description:"Your Echo identity, username and profile picture.",keywords:"profile profiles avatar pfp picture photo username"},
-  {id:"privacy",label:"Privacy & Safety",group:"USER SETTINGS",description:"Control your privacy and account session.",match:["Privacy & session"]},
+  {id:"privacy",label:"Privacy & Safety",group:"USER SETTINGS",description:"Choose what other people can see and how Echo handles your data.",match:["Privacy & session"]},
+  {id:"devices",label:"Devices",group:"USER SETTINGS",description:"Review this browser session and manage your sign-in.",keywords:"devices sessions browser login sign out security"},
+  {id:"data",label:"Data & Privacy",group:"USER SETTINGS",description:"Export your local preferences and control data stored in this browser.",keywords:"data export download reset storage local privacy"}
   {id:"appearance",label:"Appearance",group:"APP SETTINGS",description:"Make Echo look and feel the way you like.",match:["Appearance"]},
   {id:"chat",label:"Chat",group:"APP SETTINGS",description:"Adjust the layout and behaviour of your conversations.",match:["Chat layout"]},
   {id:"notifications",label:"Notifications",group:"APP SETTINGS",description:"Choose how Echo lets you know about new messages.",match:["Notifications"]},
@@ -53,7 +55,23 @@
   const description=document.createElement("p");description.className="settings-view-description";description.textContent=entry.description;
   panel.append(title,description);
 
-  if(entry.id==="profile"){
+  if(entry.id==="devices"){
+   const card=document.createElement("section");card.className="account-settings-section settings-info-card";
+   const heading=document.createElement("h4");heading.textContent="Current session";
+   const browser=document.createElement("p");browser.id="settings-device-browser";browser.textContent=navigator.userAgent;
+   const signed=document.createElement("p");signed.id="settings-device-signed";signed.textContent="Sign-in details load with your account.";
+   const note=document.createElement("p");note.className="muted";note.textContent="Echo can identify this browser session, but it cannot currently list or remotely revoke other sessions.";
+   const signout=document.createElement("button");signout.type="button";signout.textContent="Sign out of this device";signout.addEventListener("click",()=>$("account-signout").click());
+   card.append(heading,browser,signed,note,signout);panel.append(card);
+  } else if(entry.id==="data"){
+   const card=document.createElement("section");card.className="account-settings-section settings-info-card";
+   const heading=document.createElement("h4");heading.textContent="Your local Echo preferences";
+   const detail=document.createElement("p");detail.textContent="Appearance, layout, accessibility and notification preferences are saved in this browser. They are not shared with other members.";
+   const exportButton=document.createElement("button");exportButton.type="button";exportButton.textContent="Export settings file";exportButton.addEventListener("click",()=>$("account-export-preferences").click());
+   const resetButton=document.createElement("button");resetButton.type="button";resetButton.textContent="Reset app preferences";resetButton.addEventListener("click",()=>$("account-reset-preferences").click());
+   const warning=document.createElement("p");warning.className="muted";warning.textContent="Resetting preferences does not delete your account, messages, friends or servers.";
+   card.append(heading,detail,exportButton,resetButton,warning);panel.append(card);
+  } else if(entry.id==="profile"){
    const card=document.createElement("section");card.className="account-settings-section settings-profile-card";
    const avatar=document.createElement("div");avatar.className="settings-profile-avatar";avatar.id="settings-profile-avatar";
    const info=document.createElement("div");info.className="settings-profile-info";
@@ -144,7 +162,7 @@
 
  const PREF_KEY="yapper-app-preferences-v1";
  const defaults={
-  theme:"dark",accent:"#9676ff",fontFamily:"DM Sans",fontSize:13,lineHeight:1.6,messageWidth:100,
+  theme:"dark",accent:"#9676ff",fontFamily:"DM Sans",fontSize:13,lineHeight:1.6,messageWidth:100,hideOnlineStatus:false,hideNotificationContent:false,
   compact:false,compactSidebar:false,hideMembers:false,showAvatars:true,showTimestamps:true,
   showTyping:true,showGifs:true,enterSend:true,sound:false,desktopNotifications:false,
   reducedMotion:false,highContrast:false,confirmSignout:true
@@ -183,7 +201,8 @@
    showGifs:$("setting-show-gifs").checked,enterSend:$("setting-enter-send").checked,
    sound:$("setting-sound").checked,desktopNotifications:$("setting-desktop-notifications").checked,
    reducedMotion:$("setting-reduced-motion").checked,highContrast:$("setting-high-contrast").checked,
-   confirmSignout:$("setting-confirm-signout").checked
+   confirmSignout:$("setting-confirm-signout").checked,
+   hideOnlineStatus:$("setting-hide-online").checked,hideNotificationContent:$("setting-hide-notification-content").checked
   };
  }
  function updateLabels(p){
@@ -205,7 +224,8 @@
    "setting-show-avatars":"showAvatars","setting-show-timestamps":"showTimestamps","setting-show-typing":"showTyping",
    "setting-show-gifs":"showGifs","setting-enter-send":"enterSend","setting-sound":"sound",
    "setting-desktop-notifications":"desktopNotifications","setting-reduced-motion":"reducedMotion",
-   "setting-high-contrast":"highContrast","setting-confirm-signout":"confirmSignout"
+   "setting-high-contrast":"highContrast","setting-confirm-signout":"confirmSignout",
+   "setting-hide-online":"hideOnlineStatus","setting-hide-notification-content":"hideNotificationContent"
   };
   for(const [id,key] of Object.entries(map)){const el=$(id);if(el){if(el.type==="checkbox")el.checked=!!p[key];else el.value=String(key==="lineHeight"?Math.round(p[key]*10):p[key]);}}
   updateLabels(p);applyPrefs(p);
@@ -262,7 +282,8 @@
   if(desktopEnabled&&document.hidden&&"Notification" in window&&Notification.permission==="granted"){
    const sender=options.direct?(options.senderName||"a friend"):"";
    const title=options.direct?"New message from @"+sender:"New Echo message"+(mention?" · Mention":"");
-   try{new Notification(title,{body:content.slice(0,120),tag:"echo-"+(message?.id||Date.now())})}catch{}
+   const body=p.hideNotificationContent?"You have a new message.":content.slice(0,120);
+   try{new Notification(title,{body,tag:"echo-"+(message?.id||Date.now())})}catch{}
   }
  };
  $("setting-notification-permission").addEventListener("click",requestDesktopPermission);
@@ -275,6 +296,8 @@
   if(typeof S!=="undefined"&&S.user){
    $("account-current-email").textContent=S.user.email||"No email on file";
    $("account-user-id").textContent=S.user.id;
+   const signed=$("settings-device-signed");if(signed)signed.textContent="Last sign-in: "+(S.user.last_sign_in_at?new Date(S.user.last_sign_in_at).toLocaleString():"Not provided by the sign-in service");
+   const browser=$("settings-device-browser");if(browser)browser.textContent="Browser: "+navigator.userAgent;
   }
   $("account-new-email").value="";$("account-password").value="";$("account-password-confirm").value="";
   refreshSettingsProfile(typeof S!=="undefined"?S.profile:null);
@@ -283,6 +306,7 @@
  }
  $("account-settings-close").addEventListener("click",()=>dialog.close());
  const settingIds=["setting-theme","setting-accent","setting-font-family","setting-font-size","setting-line-height","setting-message-width","setting-compact","setting-compact-sidebar","setting-hide-members","setting-show-avatars","setting-show-timestamps","setting-show-typing","setting-show-gifs","setting-enter-send","setting-sound","setting-desktop-notifications","setting-reduced-motion","setting-high-contrast","setting-confirm-signout"];
+ settingIds.push("setting-hide-online","setting-hide-notification-content");
  settingIds.forEach(id=>{
   const el=$(id);if(!el)return;
   el.addEventListener(el.type==="range"?"input":"change",savePrefs);
