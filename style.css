@@ -1360,3 +1360,10 @@ html[data-theme="light"] .server-pref-availability{color:#757d9d}
 /* Direct messages navigation button */
 .actions #open-dms{flex:1 1 100%;background:linear-gradient(100deg,#315b86,#5144a0);border:1px solid #7d8fe0;color:#fff;font-size:12px;font-weight:800}
 .actions #open-dms:hover{background:linear-gradient(100deg,#427db3,#705ce0);box-shadow:0 7px 22px #6178ed55;transform:translateY(-1px)}
+
+
+/* Keep the Create and Join controls above sidebar decoration on narrow screens. */
+.side{position:relative;isolation:isolate}
+.side .actions{position:relative;z-index:5;pointer-events:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.side .actions>button{position:relative;z-index:6;pointer-events:auto;touch-action:manipulation;min-width:0;cursor:pointer}
+.side .actions #open-friends,.side .actions #open-dms{grid-column:1/-1}
