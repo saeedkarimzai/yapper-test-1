@@ -7,16 +7,35 @@
   async function render(rows,append=false){
     const root=$d("dm-messages");if(!append)root.replaceChildren();
     const ids=[...new Set(rows.flatMap(m=>[m.sender_id,m.recipient_id]))];
-    let names={};
-    if(ids.length){const p=await S.db.from("profiles").select("id,username").in("id",ids);if(!p.error)(p.data||[]).forEach(x=>names[x.id]=x.username);}
+    const profiles={};
+    if(ids.length){
+      const result=await S.db.from("profiles").select("id,username,avatar_url").in("id",ids);
+      if(!result.error)(result.data||[]).forEach(p=>{profiles[p.id]=p;});
+    }
     for(const m of rows){
       if(root.querySelector('[data-id="'+m.id+'"]'))continue;
-      const article=document.createElement("article");article.className="social-message";article.dataset.id=m.id;
+      const profile=profiles[m.sender_id]||{};
+      const name=profile.username||(m.sender_id===userId?(S.profile?.username||"You"):"Friend");
+      const article=document.createElement("article");
+      article.className="social-message dm-message-row";
+      article.dataset.id=m.id;
+      article.dataset.userId=m.sender_id;
+      const avatar=document.createElement("div");
+      avatar.className="dm-message-avatar";
+      if(profile.avatar_url){
+        const image=document.createElement("img");
+        image.src=profile.avatar_url;image.alt="";image.loading="lazy";
+        image.onerror=()=>{avatar.textContent=(name||"?").charAt(0).toUpperCase();};
+        avatar.append(image);
+      }else avatar.textContent=(name||"?").charAt(0).toUpperCase();
+      const contentWrap=document.createElement("div");
+      contentWrap.className="dm-message-main";
       const meta=document.createElement("div");meta.className="social-message-meta";
-      const author=document.createElement("b");author.textContent=m.sender_id===userId?"You":(names[m.sender_id]||"Friend");
+      const author=document.createElement("b");author.textContent=name;
       const time=document.createElement("time");time.textContent=new Date(m.created_at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
-      const body=document.createElement("div");body.className="dm-message-content";if(window.yapperRenderContent)window.yapperRenderContent(body,m.content,"dm");else body.textContent=m.content;
-      meta.append(author,time);article.append(meta,body);root.append(article);
+      const body=document.createElement("div");body.className="dm-message-content";
+      if(window.yapperRenderContent)window.yapperRenderContent(body,m.content,"dm");else body.textContent=m.content;
+      meta.append(author,time);contentWrap.append(meta,body);article.append(avatar,contentWrap);root.append(article);
     }
     root.scrollTop=root.scrollHeight;
   }
@@ -28,12 +47,21 @@
     if(!/^[a-z0-9_]{2,24}$/.test(username))return note("Enter a valid username.",true);
     $d("dm-open-button").disabled=true;
     try{
-      const t=await S.db.from("profiles").select("id,username").eq("username",username).maybeSingle();
+      const t=await S.db.from("profiles").select("id,username,avatar_url").eq("username",username).maybeSingle();
       if(t.error)throw t.error;if(!t.data)throw Error("No YAPPER user has that username.");
       if(t.data.id===userId)throw Error("You can't DM yourself.");
       const f=await S.db.from("friendships").select("id").eq("status","accepted").or("and(requester_id.eq."+userId+",addressee_id.eq."+t.data.id+"),and(requester_id.eq."+t.data.id+",addressee_id.eq."+userId+")").maybeSingle();
       if(f.error)throw f.error;if(!f.data)throw Error("You can DM accepted friends only.");
-      peerId=t.data.id;peerName=t.data.username;$d("dm-active-title").textContent="Chat with @"+peerName;if(window.yapperDmTypingJoin)window.yapperDmTypingJoin(peerId,peerName);
+      peerId=t.data.id;peerName=t.data.username;$d("dm-active-title").textContent="Chat with @"+peerName;
+      const peerAvatar=$d("dm-peer-avatar");
+      if(peerAvatar){
+        peerAvatar.replaceChildren();
+        if(t.data.avatar_url){
+          const image=document.createElement("img");image.src=t.data.avatar_url;image.alt="";image.loading="lazy";
+          image.onerror=()=>{peerAvatar.textContent=peerName.charAt(0).toUpperCase();};
+          peerAvatar.append(image);
+        }else peerAvatar.textContent=peerName.charAt(0).toUpperCase();
+      }if(window.yapperDmTypingJoin)window.yapperDmTypingJoin(peerId,peerName);
       $d("dm-message-input").disabled=false;$d("dm-send").disabled=false;
       if(sub){S.db.removeChannel(sub);sub=null;}
       const filter="and(sender_id.eq."+userId+",recipient_id.eq."+peerId+"),and(sender_id.eq."+peerId+",recipient_id.eq."+userId+")";
@@ -56,7 +84,8 @@
     catch(x){note(x.message||String(x),true)}
     finally{$d("dm-send").disabled=!peerId;$d("dm-message-input").focus();}
   });
-  function setUser(id){userId=id;if(sub){S.db.removeChannel(sub);sub=null;}if(window.yapperDmTypingLeave)window.yapperDmTypingLeave();if(!id){peerId=null;peerName="";$d("dm-messages").replaceChildren();$d("dm-active-title").textContent="No direct message selected";$d("dm-message-input").disabled=true;$d("dm-send").disabled=true;}}
+  function setUser(id){userId=id;if(sub){S.db.removeChannel(sub);sub=null;}if(window.yapperDmTypingLeave)window.yapperDmTypingLeave();if(!id){peerId=null;peerName="";$d("dm-messages").replaceChildren();$d("dm-active-title").textContent="No direct message selected";
+      if($d("dm-peer-avatar"))$d("dm-peer-avatar").textContent="?";$d("dm-message-input").disabled=true;$d("dm-send").disabled=true;}}
   S.db.auth.onAuthStateChange((event,session)=>{setUser(session?.user?.id||null);});
   S.db.auth.getSession().then(({data})=>setUser(data?.session?.user?.id||null));
 })();
