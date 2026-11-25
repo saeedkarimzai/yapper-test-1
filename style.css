@@ -437,3 +437,135 @@ html[data-theme=light] .settings-close-area .close button:hover{background:#dfe1
  .settings-view .account-settings-section,.settings-view .account-settings-danger{padding:12px}
  .settings-view .account-setting-check{font-size:11px!important}
 }
+
+/* Echo Discord-style main application shell */
+:root{--discord-bg:#313338;--discord-sidebar:#2b2d31;--discord-rail:#1e1f22;--discord-line:#26272b;--discord-muted:#949ba4;--discord-text:#f2f3f5;--discord-blue:#5865f2}
+.app{grid-template-columns:72px 240px minmax(300px,1fr) 240px;background:var(--discord-bg);color:var(--discord-text)}
+.rail{background:var(--discord-rail);gap:9px;padding:12px 0 14px;border-right:1px solid #17181a}
+.mark{width:48px;height:48px;border-radius:16px;background:#313338;padding:4px;transition:border-radius .16s,background .16s}
+.mark:hover{border-radius:14px;background:#5865f2}
+.rail-logo{object-fit:contain}
+.home-pill,.round,.server-pill{width:48px;height:48px;min-width:48px;border:0;border-radius:50%;background:#313338;color:#dbdee1;display:grid;place-items:center;font-size:20px;font-weight:700;transition:border-radius .16s,background .16s,color .16s;position:relative}
+.home-pill:hover,.round:hover,.server-pill:hover{border-radius:16px;background:#5865f2;color:#fff}
+.home-pill{font-size:25px;color:#dbdee1}
+.home-pill:before,.server-pill.active:before{content:"";position:absolute;width:4px;height:0;left:-13px;top:50%;transform:translateY(-50%);border-radius:0 4px 4px 0;background:#fff;transition:height .15s}
+.home-pill:hover:before,.server-pill.active:before{height:30px}
+.home-pill:focus-visible,.server-pill:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.rail-divider{width:32px;height:2px;background:#35363c;border-radius:2px;flex:none;margin:1px 0}
+.servers{width:100%;align-items:center;gap:9px;padding:1px 0 5px;scrollbar-width:thin}
+.server-pill{font-size:13px;background:#313338;color:#dbdee1}
+.server-pill.active{background:#5865f2;color:#fff;border-radius:16px}
+.round{background:#313338;color:#23a55a}
+.round:hover{background:#23a55a;color:#fff}
+.side{background:var(--discord-sidebar);border:0;box-shadow:1px 0 0 #202125}
+.side header{height:49px;min-height:49px;padding:0 14px;border-bottom:1px solid #202125;box-shadow:0 1px 0 #0002}
+.side header>div:first-child{min-width:0}
+.side header small{display:none}
+.side h2{font:700 15px 'DM Sans',sans-serif;max-width:155px;margin:0;color:#f2f3f5}
+.server-head-actions{gap:3px}
+.server-head-actions .tiny{border:0;background:transparent;color:#b5bac1;padding:7px 6px;font-size:13px;border-radius:5px}
+.server-head-actions .tiny:hover{background:#3f4147;color:#fff}
+#copy-id{font-size:10px}
+.actions{padding:10px 9px 8px;gap:5px;border-bottom:1px solid #25262a}
+.actions button{border:0;background:transparent;color:#b5bac1;border-radius:5px;text-align:left;padding:8px 9px;font-size:11px}
+.actions button:hover{background:#35373c;color:#fff}
+.actions #open-friends{flex:1 1 100%;background:#35373c;color:#f2f3f5;font-size:12px}
+.section{padding:17px 11px 7px 16px;color:#949ba4;font-size:10px;letter-spacing:.08em}
+.section button{border:0;background:transparent;color:#b5bac1;font-size:18px;padding:1px 5px}
+.section button:hover{color:#fff}
+#channels{padding:0 8px 12px;overflow:auto;scrollbar-width:thin}
+.channel{display:flex;align-items:center;gap:8px;padding:7px 9px;margin:1px 0;border-radius:5px;color:#949ba4;font-size:13px;font-weight:500;text-align:left}
+.channel span{font-size:20px;color:#80848e;margin:0;line-height:1}
+.channel:hover{background:#35373c;color:#dbdee1}
+.channel.active{background:#404249;color:#fff}
+.channel.active span{color:#dbdee1}
+.side footer{min-height:62px;background:#232428;padding:8px 9px;gap:4px;border-top:1px solid #202125}
+.own-profile{padding:5px 3px;border-radius:5px;gap:9px}
+.own-profile:hover{background:#35373c}
+.own-profile .avatar{width:33px;height:33px;border-radius:50%;background:#5865f2}
+.user b{font-size:12px;color:#f2f3f5}
+.user small{font-size:10px;color:#b5bac1;letter-spacing:0}
+footer .account-settings-nav,footer #signout{width:30px;height:32px;border-radius:5px;color:#b5bac1;padding:5px}
+footer .account-settings-nav:hover,footer #signout:hover{background:#35373c;color:#fff}
+.chat{background:#313338}
+.chat-head{height:49px;min-height:49px;padding:0 16px;border-bottom:1px solid #26272b;box-shadow:0 1px 0 #0002}
+.chat-head h2{display:flex;align-items:center;gap:8px;font:700 15px 'DM Sans',sans-serif;color:#f2f3f5}
+.chat-head h2:first-letter{color:#949ba4}
+.chat-head h2 span:before{content:"#";color:#949ba4;margin-right:8px;font-size:21px;font-weight:400}
+.chat-head p{display:none}
+.chat-head-actions{gap:9px}
+.search-toggle,.test-bot-button,.friends-mobile{border:0;background:transparent;color:#b5bac1;padding:7px 9px;border-radius:5px;font-size:12px}
+.search-toggle:hover,.test-bot-button:hover,.friends-mobile:hover{background:#3f4147;color:#fff}
+#live-status{padding:5px 7px;border-radius:4px;background:#25262a;font-size:8px;letter-spacing:.05em}
+.messages{padding:18px 0 20px;gap:0;background:#313338;scrollbar-width:thin}
+.message{padding:7px 16px;gap:14px;border-radius:0;min-width:0}
+.message:hover{background:#2e3035}
+.message .avatar{width:40px;height:40px;min-width:40px;border-radius:50%;background:#5865f2}
+.message-body{flex:1;min-width:0}
+.meta{gap:8px;margin:0 0 2px;min-height:20px}
+.meta b{font-size:14px;font-weight:600;color:#f2f3f5}
+.meta time{font-size:11px;color:#949ba4}
+.meta .edited-label{font-size:10px;color:#949ba4;letter-spacing:0}
+.message-text{font-size:14px;line-height:1.42;color:#dbdee1}
+.message-continuation{padding-top:2px;padding-bottom:2px}
+.message-continuation .avatar{visibility:hidden}
+.message-continuation .meta{display:none}
+.message-continuation:hover .meta{display:flex;position:absolute;left:16px;top:4px;width:40px;justify-content:center;opacity:.75}
+.message-continuation:hover .meta b,.message-continuation:hover .meta .edited-label{display:none}
+.message-continuation:hover .meta time{font-size:9px}
+.empty{color:#b5bac1}
+.empty>div{width:64px;height:64px;background:#404249;color:#dbdee1;border-radius:50%}
+.empty h2{font:700 20px 'DM Sans',sans-serif;color:#f2f3f5}
+.composer{margin:0 16px;padding:6px 9px;gap:7px;border:0;border-radius:8px;background:#383a40;min-height:44px}
+.composer:focus-within{box-shadow:0 0 0 1px #5865f2}
+.composer input{color:#f2f3f5;font-size:14px;padding:8px}
+.composer input::placeholder{color:#949ba4}
+.composer button{background:transparent;color:#b5bac1;border-radius:5px;width:34px;min-width:34px}
+.composer button:hover:not(:disabled){background:#4a4d55;color:#fff}
+.composer #send{background:#5865f2;color:#fff}
+.composer #send:hover:not(:disabled){background:#4752c4}
+.note{margin:8px 16px 10px;color:#b5bac1;font-size:10px}
+.right{background:var(--discord-sidebar);border:0;border-left:1px solid #26272b;padding:20px 10px 16px;overflow:auto}
+.member-heading{font-size:11px;letter-spacing:.04em;font-weight:800;color:#949ba4;padding:0 8px 11px}
+.member-heading span{margin-left:4px;color:#949ba4}
+.member-list{display:flex;flex-direction:column;gap:2px;margin:0;max-height:none}
+.member-group-title{padding:14px 8px 5px;color:#949ba4;font-size:10px;letter-spacing:.07em;font-weight:800;text-transform:uppercase}
+.member-group-title:first-child{padding-top:3px}
+.member-row{padding:7px 8px;border-radius:5px;gap:10px}
+.member-row:hover{background:#35373c}
+.member-avatar{border-radius:50%;width:32px;height:32px;background:#5865f2;color:#fff}
+.member-name b{font-size:13px;font-weight:500;color:#dbdee1}
+.member-name small{font-size:10px;color:#949ba4}
+.member-empty{padding:8px;color:#949ba4;font-size:12px}
+.live.offline{color:#ed4245}
+.message-search{background:#2b2d31;border-color:#26272b;padding:10px 16px}
+.message-search input{background:#1e1f22;border-color:#1e1f22;color:#f2f3f5}
+.message-search button{background:#404249;border-color:#404249;color:#dbdee1}
+.emoji-tray{background:#232428;border-color:#111214}
+.reaction-chip,.reaction-add,.reaction-picker,.message-actions button{background:#232428;border-color:#3f4147;color:#dbdee1}
+.reaction-chip.mine{background:#3b3671;border-color:#5865f2}
+.message-actions{margin-top:5px}
+.message-actions button{font-size:11px}
+.toast{background:#232428;border:1px solid #111214;color:#f2f3f5}
+@media(max-width:1120px){
+ .app{grid-template-columns:72px 220px minmax(250px,1fr)}
+ .right{display:none}
+}
+@media(max-width:700px){
+ .app{grid-template-columns:64px minmax(0,1fr)}
+ .rail{grid-column:1}
+ .side{display:none}
+ .chat{grid-column:2}
+ .chat-head{padding:0 10px}
+ .messages{padding:10px 0}
+ .message{padding-left:10px;padding-right:10px}
+ .composer{margin:0 10px}
+}
+@media(max-width:470px){
+ .app{grid-template-columns:54px minmax(0,1fr)}
+ .mark,.home-pill,.server-pill,.round{width:40px;height:40px;min-width:40px}
+ .chat-head-actions{gap:3px}
+ .test-bot-button{display:none}
+ .live{display:none}
+ .message .avatar{width:34px;height:34px;min-width:34px}
+}
