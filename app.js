@@ -121,6 +121,10 @@ async function selectServer(id){
    try{const last=localStorage.getItem("echo-last-channel:"+id);if(last&&S.channels.some(channel=>channel.id===last))selectedChannel=last;}catch{}
   }
   await selectChannel(selectedChannel||S.channels[0].id);
+  if(prefs.showWelcomeTips){
+   const tipKey="echo-welcome-tip-seen:"+id;
+   try{if(!localStorage.getItem(tipKey)){toast("Tip: Use the + beside TEXT CHANNELS to add a channel.");localStorage.setItem(tipKey,"1");}}catch{}
+  }
  }else{
   S.messages=[];renderMessages();
   $("channel-name").textContent="No channels";$("channel-desc").textContent="Create a channel to start talking.";
@@ -218,7 +222,9 @@ function openJoinServerPage(){
  if(!page)return;
  page.classList.remove("hidden");
  page.setAttribute("aria-hidden","false");
- $("join-server-search").value="";
+ const rememberDirectorySearch=currentServerPrefs(S.server?.id).rememberSearch;
+ try{$("join-server-search").value=rememberDirectorySearch?(localStorage.getItem("echo-server-directory-search")||""):"";}
+ catch{$("join-server-search").value="";}
  $("join-invite-feedback").textContent="";
  document.body.classList.add("join-page-open");
  loadJoinDirectory().catch(error=>showJoinDirectoryMessage("Could not load public communities. "+err(error),"error"));
@@ -315,7 +321,7 @@ $("join-category-tabs").addEventListener("click",event=>{
  $("join-category-tabs").querySelectorAll("button").forEach(item=>item.classList.toggle("active",item===button));
  renderJoinDirectory();
 });
-$("join-server-search").addEventListener("input",renderJoinDirectory);
+$("join-server-search").addEventListener("input",()=>{if(currentServerPrefs(S.server?.id).rememberSearch){try{localStorage.setItem("echo-server-directory-search",$("join-server-search").value)}catch{}}renderJoinDirectory();});
 $("join-directory-refresh").addEventListener("click",()=>loadJoinDirectory());
 $("join-page-back").addEventListener("click",closeJoinServerPage);
 $("join-page-close").addEventListener("click",closeJoinServerPage);
@@ -335,6 +341,17 @@ $("join-invite-form").addEventListener("submit",async event=>{
 });
 document.addEventListener("keydown",event=>{
  if(event.key==="Escape"&&!$("join-server-page").classList.contains("hidden"))closeJoinServerPage();
+});
+document.addEventListener("keydown",event=>{
+ if(!event.altKey||!["ArrowUp","ArrowDown"].includes(event.key)||event.ctrlKey||event.metaKey)return;
+ if(event.target.closest("input,textarea,select,[contenteditable=true]"))return;
+ if(document.querySelector("dialog[open]")||!$("join-server-page").classList.contains("hidden"))return;
+ if(!currentServerPrefs(S.server?.id).enableQuickSwitch||S.servers.length<2)return;
+ const currentIndex=Math.max(0,S.servers.findIndex(server=>server.id===S.server?.id));
+ const offset=event.key==="ArrowDown"?1:-1;
+ const nextIndex=(currentIndex+offset+S.servers.length)%S.servers.length;
+ event.preventDefault();
+ selectServer(S.servers[nextIndex].id).catch(error=>toast(err(error)));
 });
 
 
@@ -384,6 +401,7 @@ function applyServerPreferenceUI(){
  root.classList.toggle("yapper-server-blur-media",!!prefs.blurSensitiveMedia);
  root.classList.toggle("yapper-server-reduced-motion",!!prefs.reduceServerAnimations);
  root.classList.toggle("yapper-server-highlight-mentions",!!prefs.highlightMentions);
+ root.classList.toggle("yapper-server-hide-reactions",!prefs.showReactions);
  const subtitle=$("server-subtitle");
  if(subtitle)subtitle.textContent=prefs.showServerDescriptions&&S.server?.description?S.server.description:"YOUR COMMUNITY";
  const channelHeading=$("channel-section-title");
@@ -414,6 +432,7 @@ function renderServerPrefs(){
     try{
      localStorage.setItem(serverPrefsKey(S.server.id),JSON.stringify(current));
      applyServerPreferenceUI();
+     if(key==="hideOnlineStatus")window.echoUpdatePresencePreferences?.();
      const status=$("server-preferences-status");
      if(status)status.textContent="Saved automatically on this device · "+new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
     }catch(error){toast("Could not save this preference: "+(error.message||error));}
