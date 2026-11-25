@@ -466,7 +466,7 @@
       S.profiles[S.user.id] = updated.data;
       removeAvatarRequested = false;
       paintOwnProfile();
-      if (S.presence) await S.presence.track({ user_id: S.user.id, username, avatar_url: avatarUrl, online_at: new Date().toISOString() });
+      if (S.presence && typeof window.echoUpdatePresencePreferences === "function") await window.echoUpdatePresencePreferences();
       await loadMembers();
       window.renderMessages();
       document.getElementById("profile-modal").close();
