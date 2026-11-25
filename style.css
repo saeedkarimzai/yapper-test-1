@@ -1180,3 +1180,98 @@ html[data-theme="light"] .server-discovery-toggle small{color:#697091}
 html[data-theme="light"] .join-directory-message{background:#fff;border-color:#c9cceb}
 html[data-theme="light"] .join-directory-message h3{color:#303253}
 html[data-theme="light"] .join-directory-message p{color:#66708f}
+
+/* Account settings: restore full workspace width and show the user's profile picture */
+.account-settings-modal{
+ width:min(1160px,96vw)!important;
+ max-width:none!important;
+ height:min(850px,92vh)!important;
+ max-height:92vh!important;
+}
+.settings-profile-card{
+ display:flex!important;align-items:center;gap:20px;
+ padding:22px!important;
+ background:linear-gradient(130deg,#292e4d,#242944 65%,#35274e)!important;
+}
+.settings-profile-avatar{
+ width:100px;height:100px;min-width:100px;display:grid;place-items:center;
+ overflow:hidden;border:4px solid #a78bfa;border-radius:50%;
+ background:linear-gradient(135deg,#9a66ff,#4c94db 58%,#3ec5bd);
+ color:#fff;font-size:32px;font-weight:800;
+ box-shadow:0 0 0 6px #8d6bff20,0 8px 25px #0005;
+}
+.settings-profile-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.settings-profile-info{min-width:0;flex:1}
+.settings-profile-info h4{margin:0 0 6px;color:#fff;font-size:19px}
+.settings-profile-info p{margin:0 0 8px;color:#b5bdd9;font-size:12px;line-height:1.55}
+.settings-profile-info button{
+ margin:5px 0 0!important;padding:9px 15px!important;
+ border:0!important;border-radius:8px!important;
+ background:linear-gradient(110deg,var(--purple),color-mix(in srgb,var(--purple),#35c9d0 45%))!important;
+ color:#fff!important;font-weight:800;
+}
+.settings-profile-note{margin:10px 4px;color:#9ba6c8;font-size:11px}
+.settings-nav button.active{
+ border-left:3px solid var(--purple);
+ padding-left:7px;
+ background:color-mix(in srgb,var(--purple),transparent 82%);
+}
+.settings-nav button:focus-visible,.account-settings-modal button:focus-visible,
+.account-settings-modal input:focus-visible,.account-settings-modal select:focus-visible{
+ outline:2px solid var(--purple);outline-offset:2px;
+}
+.primary,#send,.channel.active,.server-pill.active,.join-primary,.join-server-card-button{
+ background-image:linear-gradient(110deg,var(--purple),color-mix(in srgb,var(--purple),#39b8ca 50%));
+}
+#server-subtitle{display:block;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#server-id-info{overflow-wrap:anywhere;font-size:10px}
+#server-preferences-status{margin:7px 0;color:#9ca8ca;font-size:10px}
+.server-pref-row input{accent-color:var(--purple)}
+html.yapper-server-compact-channels #channels .channel{padding-top:5px;padding-bottom:5px;margin:0}
+html.yapper-server-hide-member-avatars #member-list .member-avatar{display:none!important}
+html.yapper-server-hide-timestamps .message .meta time{display:none!important}
+html.yapper-server-hide-edited-labels .edited-label{display:none!important}
+html.yapper-server-hide-typing #typing-indicator{display:none!important}
+html.yapper-server-hide-previews .message-text img,html.yapper-server-hide-previews .message-text video,
+html.yapper-server-hide-previews .dm-message-content img{display:none!important}
+html.yapper-server-blur-media .message-text img,html.yapper-server-blur-media .dm-message-content img{filter:blur(16px);transition:filter .18s}
+html.yapper-server-blur-media .message-text img:hover,html.yapper-server-blur-media .dm-message-content img:hover{filter:none}
+html.yapper-server-reduced-motion *,html.yapper-server-reduced-motion *::before,
+html.yapper-server-reduced-motion *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+html.yapper-server-highlight-mentions .message-mention{
+ background:color-mix(in srgb,var(--purple),transparent 88%);
+ border-color:color-mix(in srgb,var(--purple),transparent 58%);
+}
+html.yapper-server-highlight-mentions .message-mention .message-text{color:#fff}
+@media(max-width:900px){
+ .account-settings-modal{width:min(98vw,760px)!important}
+ .account-settings-layout{grid-template-columns:190px minmax(0,1fr)}
+ .settings-main{padding:28px 22px 14px}
+}
+@media(max-width:700px){
+ html.yapper-compact-sidebar .app,html.yapper-hide-members .app{grid-template-columns:54px minmax(0,1fr)!important}
+ .account-settings-modal{width:98vw!important;height:94vh!important;max-height:94vh!important}
+ .account-settings-layout{grid-template-columns:155px minmax(0,1fr)}
+ .settings-main{padding:22px 14px 12px}
+ .settings-profile-card{align-items:flex-start!important;gap:13px;padding:15px!important}
+ .settings-profile-avatar{width:72px;height:72px;min-width:72px;font-size:24px}
+ .settings-profile-info h4{font-size:15px}
+}
+@media(max-width:480px){
+ .account-settings-layout{grid-template-columns:118px minmax(0,1fr)}
+ .settings-sidebar{padding:18px 6px 10px}
+ .settings-nav button{padding:8px 6px;font-size:10px}
+ .settings-main{padding:20px 10px 10px}
+ .settings-profile-card{flex-direction:column;align-items:center!important;text-align:center}
+ .settings-profile-info button{margin-left:auto!important;margin-right:auto!important}
+}
+html[data-theme="light"] .settings-profile-card{
+ background:linear-gradient(130deg,#fff,#f2efff 65%,#e9f4ff)!important;
+ border-color:#d4d5ee!important;
+}
+html[data-theme="light"] .settings-profile-info h4{color:#292b50}
+html[data-theme="light"] .settings-profile-info p,html[data-theme="light"] .settings-profile-note{color:#687091}
+html[data-theme="light"] .settings-profile-avatar{border-color:#9271e8}
+html[data-theme="light"] .settings-nav button.active{
+ background:color-mix(in srgb,var(--purple),white 88%);color:#342c5b;
+}
