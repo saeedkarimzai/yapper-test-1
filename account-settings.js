@@ -3,6 +3,8 @@
  const $=id=>document.getElementById(id);
  const open=$("open-account-settings"),dialog=$("account-settings-modal");
  if(!open||!dialog)return;
+ // Keep the settings button responsive even if a later settings panel fails to initialize.
+ open.addEventListener("click",()=>{try{if(typeof fill==="function")fill()}catch(error){console.error("Echo settings load error:",error)}if(!dialog.open)dialog.showModal()});
 
  // Build a Discord-inspired settings workspace with a real category sidebar.
  const settingsSections=[...dialog.querySelectorAll(".account-settings-section,.account-settings-danger")];
@@ -355,7 +357,6 @@
   if($("setting-desktop-notifications").checked)await requestDesktopPermission();
   else savePrefs();
  });
- open.addEventListener("click",()=>{fill();dialog.showModal()});
  function fill(){
   if(typeof S!=="undefined"&&S.user){
    $("account-current-email").textContent=S.user.email||"No email on file";
