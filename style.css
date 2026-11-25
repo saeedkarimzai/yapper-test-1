@@ -1292,3 +1292,10 @@ html.yapper-server-hide-reactions .reaction-add,
 html.yapper-server-hide-reactions .reaction-picker{display:none!important}
 
 .channel.muted{opacity:.48;filter:saturate(.55)}.channel.muted:hover{opacity:.85}
+
+.server-pref-row{align-items:center;gap:14px}
+.server-pref-row>span{display:flex;flex-direction:column;gap:3px;min-width:0}
+.server-pref-availability{color:#8e98bc;font-size:9px;letter-spacing:.03em;font-weight:700}
+.server-pref-row input:disabled{opacity:.35;cursor:not-allowed}
+.server-pref-row:has(input:disabled){opacity:.76}
+html[data-theme="light"] .server-pref-availability{color:#757d9d}
