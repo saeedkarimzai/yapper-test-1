@@ -140,6 +140,7 @@
   username.textContent=profile?.username?"@"+profile.username:"Profile is still loading";
   detail.textContent=profile?.avatar_url?"Your profile picture is visible beside your messages, in member lists, friends and private messages.":"Add a profile picture so people can recognize you around Echo.";
   const edit=$("account-profile-edit");if(edit)edit.disabled=!profile;
+  if(typeof paintProfileCustom==="function")paintProfileCustom();
  }
  const PROFILE_CUSTOM_KEY="echo-profile-customization-v1";
  const profileCustomDefaults={about:"",pronouns:"",status:"",color:"#9676ff",showDetails:true};
