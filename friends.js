@@ -194,6 +194,19 @@
   $f("open-friends").addEventListener("click", openFriends);
   const homeButton = $f("home-nav");
   if (homeButton) homeButton.addEventListener("click", openFriends);
+  const appShell = $f("app");
+  const mobileNavButton = $f("mobile-sidebar-toggle");
+  const channelNav = $f("channels");
+  const chatPane = document.querySelector(".chat");
+  if (mobileNavButton && appShell) {
+    mobileNavButton.addEventListener("click", () => appShell.classList.toggle("mobile-channels-open"));
+  }
+  if (channelNav && appShell) {
+    channelNav.addEventListener("click", () => appShell.classList.remove("mobile-channels-open"));
+  }
+  if (chatPane && appShell) {
+    chatPane.addEventListener("click", () => appShell.classList.remove("mobile-channels-open"));
+  }
   const mobileFriendsButton = $f("open-friends-mobile");
   if (mobileFriendsButton) mobileFriendsButton.addEventListener("click", openFriends);
   $f("friends-close").addEventListener("click", () => $f("friends-modal").close());
