@@ -12,95 +12,140 @@ function showApp(){dismissPreloader(); $("auth").classList.add("hidden");$("app"
 function setupPasswordRecovery(){
  S.db.auth.onAuthStateChange(async(event)=>{
   if(event!=="PASSWORD_RECOVERY")return;
-  const next=prompt("Enter a new YAPPER password (at least 6 characters):");
-  if(!next||next.length<6){toast("Password reset cancelled. Use at least 6 characters.");return}
-  const {error}=await S.db.auth.updateUser({password:next});
-  if(error)toast("Could not update password: "+err(error));
-  else{toast("Password updated! You can now sign in as ceo.");await S.db.auth.signOut();showAuth()}
+  $("auth").classList.remove("hidden");$("app").classList.add("hidden");
+  $("auth-form").classList.add("hidden");$("forgot-form").classList.add("hidden");$("confirm-panel").classList.add("hidden");$("auth-switch-row").classList.add("hidden");
+  $("recovery-form").classList.remove("hidden");
+  $("auth-title").textContent="Reset your password.";
+  $("auth-subtitle").textContent="Create a new password for your Echo account.";
+  $("auth-feedback").classList.add("hidden");
  });
+ $("recovery-form").onsubmit=async event=>{
+  event.preventDefault();
+  const password=$("new-password").value,confirmPassword=$("new-password-confirm").value,button=$("save-new-password");
+  if(password.length<6){setAuthFeedback("Use at least 6 characters.","error");return}
+  if(password!==confirmPassword){setAuthFeedback("Those passwords don’t match. Try again.","error");return}
+  button.disabled=true;button.textContent="Updating…";
+  try{
+   const {error}=await S.db.auth.updateUser({password});
+   if(error)throw error;
+   await S.db.auth.signOut();
+   $("recovery-form").classList.add("hidden");$("auth-form").classList.remove("hidden");$("auth-switch-row").classList.remove("hidden");
+   $("auth-title").textContent="Password updated.";
+   $("auth-subtitle").textContent="Your password has been changed. Sign in with your new password.";
+   setAuthFeedback("Password changed successfully. You can sign in now.","success");
+   $("password").value="";$("new-password").value="";$("new-password-confirm").value="";
+  }catch(error){setAuthFeedback(err(error),"error")}
+  finally{button.disabled=false;button.textContent="Update password"}
+ };
+}
+function setAuthFeedback(message,type="info"){
+ const box=$("auth-feedback");if(!box)return;
+ box.textContent=message;box.className="auth-feedback "+type;
 }
 function setupAuth(){
- const muted=document.querySelector(".auth-card .muted");
- const emailLabel=$("email").previousElementSibling;
+ let pendingConfirmationEmail="";
+ const muted=$("auth-subtitle");
+ const clearFeedback=()=>{$("auth-feedback").classList.add("hidden")};
  const setMode=()=>{
   S.mode=S.mode==="signin"?"signup":"signin";
   const signup=S.mode==="signup";
-  $("auth-title").textContent=signup?"Join YAPPER.":"Welcome back.";
-  if(muted)muted.textContent=signup?"Create your account with an email address and password.":"Sign in with your email or YAPPER username.";
-  if(emailLabel)emailLabel.textContent=signup?"Email":"Email or username";
+  $("auth-title").textContent=signup?"Create your Echo account.":"Welcome back.";
+  muted.textContent=signup?"Join Echo with your email and a password.":"Sign in to pick up where you left off.";
   $("email").type=signup?"email":"text";
-  $("email").placeholder=signup?"you@example.com":"Email or username";
+  $("email").placeholder=signup?"you@example.com":"Email or Echo username";
   $("email").autocomplete=signup?"email":"username";
-  $("email").required=true;
-  $("auth-submit").textContent=signup?"Create account":"Sign in";
-  $("switch-text").textContent=signup?"Already have an account?":"New to YAPPER?";
-  $("switch").textContent=signup?"Sign in":"Create an account";
+  $("confirm-password-wrap").classList.toggle("hidden",!signup);
+  $("confirm-password").required=signup;
   $("password").autocomplete=signup?"new-password":"current-password";
+  $("auth-submit").textContent=signup?"Create account":"Sign in";
+  $("switch-text").textContent=signup?"Already have an account?":"New to Echo?";
+  $("switch").textContent=signup?"Sign in":"Create an account";
+  $("forgot-password").classList.toggle("hidden",signup);
+  $("auth-form").classList.remove("hidden");$("forgot-form").classList.add("hidden");$("confirm-panel").classList.add("hidden");
+  $("auth-switch-row").classList.remove("hidden");clearFeedback();
  };
  $("switch").onclick=setMode;
- $("forgot-password").onclick=async()=>{
-  if(S.mode!=="signin"){toast("Switch to Sign in first.");return}
-  const email=prompt("Enter the school email linked to your YAPPER account:");
-  if(!email)return;
-  if(!email.includes("@")){toast("Enter a valid email address.");return}
-  const {error}=await S.db.auth.resetPasswordForEmail(email.trim(),{redirectTo:location.origin+location.pathname});
-  if(error)toast(err(error));else toast("Password reset email sent. Check your school inbox and open the reset link.");
+ document.querySelectorAll("[data-password-toggle]").forEach(button=>button.addEventListener("click",()=>{
+  const input=$(button.dataset.passwordToggle);const visible=input.type==="password";
+  input.type=visible?"text":"password";button.textContent=visible?"Hide":"Show";
+  button.setAttribute("aria-label",visible?"Hide password":"Show password");
+ }));
+ $("forgot-password").onclick=()=>{
+  if(S.mode!=="signin")return;
+  $("reset-email").value=$("email").value.includes("@")?$("email").value.trim():"";
+  $("auth-form").classList.add("hidden");$("forgot-form").classList.remove("hidden");$("auth-switch-row").classList.add("hidden");
+  $("auth-title").textContent="Reset your password.";
+  muted.textContent="We’ll email you a secure link to get back into your account.";
+  clearFeedback();$("reset-email").focus();
  };
-
- $("auth-form").onsubmit=async e=>{
-  e.preventDefault();
-  const login=$("email").value.trim();
-  const password=$("password").value;
-  const signup=S.mode==="signup";
-  $("auth-submit").disabled=true;
-  $("auth-submit").textContent=signup?"Creating account…":"Signing in…";
+ $("back-to-login").onclick=()=>{
+  $("forgot-form").classList.add("hidden");$("auth-form").classList.remove("hidden");$("auth-switch-row").classList.remove("hidden");
+  $("auth-title").textContent="Welcome back.";muted.textContent="Sign in to pick up where you left off.";clearFeedback();
+ };
+ $("forgot-form").onsubmit=async event=>{
+  event.preventDefault();const email=$("reset-email").value.trim(),button=$("send-reset");
+  button.disabled=true;button.textContent="Sending…";
   try{
-   let r;
+   const {error}=await S.db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+   if(error)throw error;
+   setAuthFeedback("If an account exists for that email, a password-reset link is on its way. Check your inbox and spam folder.","success");
+  }catch(error){setAuthFeedback(err(error),"error")}
+  finally{button.disabled=false;button.textContent="Send reset link"}
+ };
+ $("resend-confirmation").onclick=async()=>{
+  const button=$("resend-confirmation");if(!pendingConfirmationEmail)return;
+  button.disabled=true;button.textContent="Sending…";
+  try{
+   const {error}=await S.db.auth.resend({type:"signup",email:pendingConfirmationEmail,options:{emailRedirectTo:location.origin+location.pathname}});
+   if(error)throw error;
+   $("confirm-copy").textContent="A fresh confirmation link has been sent to "+pendingConfirmationEmail+". Check your inbox and spam folder.";
+  }catch(error){$("confirm-copy").textContent=err(error)}
+  finally{button.disabled=false;button.textContent="Resend confirmation email"}
+ };
+ $("confirm-back").onclick=()=>{
+  $("confirm-panel").classList.add("hidden");$("auth-form").classList.remove("hidden");$("auth-switch-row").classList.remove("hidden");
+  $("auth-title").textContent="Welcome back.";muted.textContent="Sign in to pick up where you left off.";
+ };
+ $("auth-form").onsubmit=async event=>{
+  event.preventDefault();
+  const login=$("email").value.trim(),password=$("password").value,signup=S.mode==="signup";
+  if(signup&&password!==$("confirm-password").value){setAuthFeedback("Those passwords don’t match.","error");return}
+  if(signup&&password.length<6){setAuthFeedback("Your password must be at least 6 characters.","error");return}
+  const button=$("auth-submit");button.disabled=true;button.textContent=signup?"Creating account…":"Signing in…";clearFeedback();
+  try{
+   let result;
    if(signup){
     if(!login.includes("@"))throw new Error("Enter a valid email address to create your account.");
-    const redirectTo=location.origin+location.pathname;
-    r=await S.db.auth.signUp({email:login,password,options:{emailRedirectTo:redirectTo}});
-    if(r.error)throw r.error;
-    if(r.data.session&&r.data.user){
-     toast("Your YAPPER account is ready!");
-     startUser(r.data.user);
-    }else if(r.data.user){
-     $("auth-title").textContent="Check your email.";
-     if(muted)muted.textContent="We sent a confirmation link to "+login+". Open that email and confirm your address, then come back here to sign in.";
-     toast("Account created. Check your inbox to confirm your email.");
-    }else{
-     throw new Error("YAPPER did not return an account. Check whether new sign-ups are enabled in Supabase.");
-    }
+    result=await S.db.auth.signUp({email:login,password,options:{emailRedirectTo:location.origin+location.pathname}});
+    if(result.error)throw result.error;
+    if(result.data.session&&result.data.user){toast("Your Echo account is ready!");startUser(result.data.user)}
+    else if(result.data.user){
+     pendingConfirmationEmail=login;
+     $("confirm-copy").textContent="We sent a confirmation link to "+login+". Open it to verify your email, then come back and sign in.";
+     $("auth-form").classList.add("hidden");$("confirm-panel").classList.remove("hidden");$("auth-switch-row").classList.add("hidden");
+     $("auth-title").textContent="One last step.";muted.textContent="Verify your email to activate your Echo account.";
+     setAuthFeedback("Account created. Email confirmation is required before you can sign in.","success");
+    }else throw new Error("Echo did not return an account. Check whether new sign-ups are enabled.");
    }else if(login.includes("@")){
-    r=await S.db.auth.signInWithPassword({email:login,password});
-    if(r.error)throw r.error;
-    if(r.data.user)startUser(r.data.user);
+    result=await S.db.auth.signInWithPassword({email:login,password});
+    if(result.error)throw result.error;
+    if(result.data.user)startUser(result.data.user);
    }else{
-    const response=await fetch(SUPABASE_URL+"/functions/v1/username-login",{
-     method:"POST",
-     headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY},
-     body:JSON.stringify({username:login,password})
-    });
-    const result=await response.json().catch(()=>({}));
-    if(!response.ok)throw new Error(result.error||"Username or password is incorrect.");
-    if(!result.access_token||!result.refresh_token)throw new Error("Username or password is incorrect.");
-    const session=await S.db.auth.setSession({access_token:result.access_token,refresh_token:result.refresh_token});
+    const response=await fetch(SUPABASE_URL+"/functions/v1/username-login",{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY},body:JSON.stringify({username:login,password})});
+    const payload=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(payload.error||"Username or password is incorrect.");
+    if(!payload.access_token||!payload.refresh_token)throw new Error("Username or password is incorrect.");
+    const session=await S.db.auth.setSession({access_token:payload.access_token,refresh_token:payload.refresh_token});
     if(session.error)throw session.error;
     if(session.data.user)startUser(session.data.user);
    }
-  }catch(e){
-   const message=err(e);
-   if(/signups? not allowed|signup is disabled|new user registration is disabled/i.test(message)){
-    toast("New accounts are disabled in Supabase. Enable 'Allow new users to sign up' in Authentication settings.");
-   }else if(/redirect.*not allowed|not whitelisted/i.test(message)){
-    toast("Add this site to Supabase Authentication → URL Configuration → Redirect URLs: "+location.origin+location.pathname);
-   }else{
-    toast(message);
-   }
-  }finally{
-   $("auth-submit").disabled=false;
-   $("auth-submit").textContent=S.mode==="signup"?"Create account":"Sign in";
-  }
+  }catch(error){
+   const message=err(error);
+   if(/signups? not allowed|signup is disabled|new user registration is disabled/i.test(message))setAuthFeedback("New accounts are disabled right now. The Echo administrator needs to enable sign-ups in Supabase Authentication settings.","error");
+   else if(/redirect.*not allowed|not whitelisted/i.test(message))setAuthFeedback("This site’s redirect URL must be added in Supabase Authentication → URL Configuration: "+location.origin+location.pathname,"error");
+   else if(/invalid login credentials/i.test(message))setAuthFeedback("That email/username or password doesn’t match. Check it and try again.","error");
+   else setAuthFeedback(message,"error");
+  }finally{button.disabled=false;button.textContent=S.mode==="signup"?"Create account":"Sign in"}
  };
 }
 async function startUser(u){if(S.user?.id===u.id&&!$("app").classList.contains("hidden"))return;S.user=u;showApp()}
