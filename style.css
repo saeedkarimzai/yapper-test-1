@@ -1305,3 +1305,21 @@ html[data-theme="light"] .server-pref-availability{color:#757d9d}
 
 /* Profile and My Account detail controls */
 .settings-profile-custom{display:grid;gap:10px}.settings-profile-custom h4{margin:0 0 4px}.settings-profile-custom textarea,.settings-profile-custom input:not([type=checkbox]),.settings-profile-custom select{width:100%;box-sizing:border-box;background:var(--panel,rgba(255,255,255,.045));color:inherit;border:1px solid var(--border,rgba(255,255,255,.12));border-radius:9px;padding:10px;font:inherit}.settings-profile-custom textarea{resize:vertical;min-height:76px}.settings-profile-custom small{opacity:.7;text-align:right}.settings-profile-card{border-top:3px solid var(--profile-accent,#9676ff)}.settings-inline-actions{display:flex;flex-wrap:wrap;gap:8px}.settings-inline-actions button{margin:0}.settings-info-card button{max-width:100%}
+
+
+/* Echo startup preloader */
+.echo-preloader{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 42%,#38245f 0%,#191525 34%,#0d0e14 78%);opacity:1;visibility:visible;transition:opacity .42s ease,visibility .42s ease}
+.echo-preloader.is-hidden{opacity:0;visibility:hidden;pointer-events:none}
+.preloader-content{width:min(310px,80vw);display:flex;flex-direction:column;align-items:center;text-align:center}
+.preloader-logo{display:block;width:min(220px,68vw);height:auto;max-height:100px;object-fit:contain;filter:drop-shadow(0 0 24px #9875ff70);animation:preloader-float 2.4s ease-in-out infinite}
+.preloader-caption{margin-top:24px;color:#a99bda;font-size:9px;font-weight:800;letter-spacing:.24em}
+.preloader-track{width:100%;height:5px;margin-top:23px;overflow:hidden;border-radius:20px;background:#ffffff17;box-shadow:inset 0 1px 3px #0008}
+.preloader-progress{display:block;width:42%;height:100%;border-radius:20px;background:linear-gradient(90deg,#8d69ff,#d4aaff,#54d9ff);box-shadow:0 0 16px #9c78ff;animation:preloader-progress 1.45s ease-in-out infinite}
+.preloader-status{display:flex;align-items:center;gap:9px;margin-top:15px;color:#d8d2eb;font-size:12px;font-weight:600;letter-spacing:.04em}
+.preloader-pulse{width:7px;height:7px;border-radius:50%;background:#a78bff;box-shadow:0 0 12px #a78bff;animation:preloader-pulse 1s ease-in-out infinite}
+.preloader-dots{display:inline-block;width:18px;text-align:left;overflow:hidden;vertical-align:bottom;animation:preloader-dots 1.25s steps(4,end) infinite}
+@keyframes preloader-progress{0%{transform:translateX(-110%)}100%{transform:translateX(250%)}}
+@keyframes preloader-pulse{50%{opacity:.35;transform:scale(.72)}}
+@keyframes preloader-float{50%{transform:translateY(-5px)}}
+@keyframes preloader-dots{0%{width:0}100%{width:18px}}
+@media(prefers-reduced-motion:reduce){.echo-preloader *{animation:none!important}.preloader-progress{width:100%;transform:none}}
