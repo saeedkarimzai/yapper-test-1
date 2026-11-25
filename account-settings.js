@@ -162,7 +162,7 @@
 
  const PREF_KEY="yapper-app-preferences-v1";
  const defaults={
-  theme:"dark",accent:"#9676ff",fontFamily:"DM Sans",fontSize:13,lineHeight:1.6,messageWidth:100,hideOnlineStatus:false,hideNotificationContent:false,
+  theme:"dark",accent:"#9676ff",fontFamily:"DM Sans",fontSize:13,lineHeight:1.6,messageWidth:100,hideOnlineStatus:false,hideNotificationContent:false,confirmExternalLinks:true,confirmPreferenceReset:true,
   compact:false,compactSidebar:false,hideMembers:false,showAvatars:true,showTimestamps:true,
   showTyping:true,showGifs:true,enterSend:true,sound:false,desktopNotifications:false,
   reducedMotion:false,highContrast:false,confirmSignout:true
@@ -202,7 +202,8 @@
    sound:$("setting-sound").checked,desktopNotifications:$("setting-desktop-notifications").checked,
    reducedMotion:$("setting-reduced-motion").checked,highContrast:$("setting-high-contrast").checked,
    confirmSignout:$("setting-confirm-signout").checked,
-   hideOnlineStatus:$("setting-hide-online").checked,hideNotificationContent:$("setting-hide-notification-content").checked
+   hideOnlineStatus:$("setting-hide-online").checked,hideNotificationContent:$("setting-hide-notification-content").checked,
+   confirmExternalLinks:$("setting-confirm-external-links").checked,confirmPreferenceReset:$("setting-confirm-preference-reset").checked
   };
  }
  function updateLabels(p){
@@ -212,7 +213,7 @@
  }
  function savePrefs(){
   const p=collect();
-  try{writePrefs(p);applyPrefs(p);updateLabels(p);say("Settings saved on this device.");}
+  try{writePrefs(p);applyPrefs(p);updateLabels(p);window.echoUpdatePresencePreferences?.();window.renderMembers?.();say("Settings saved on this device.");}
   catch{say("Could not save settings in this browser.",true)}
  }
  function loadPrefs(){
@@ -225,7 +226,8 @@
    "setting-show-gifs":"showGifs","setting-enter-send":"enterSend","setting-sound":"sound",
    "setting-desktop-notifications":"desktopNotifications","setting-reduced-motion":"reducedMotion",
    "setting-high-contrast":"highContrast","setting-confirm-signout":"confirmSignout",
-   "setting-hide-online":"hideOnlineStatus","setting-hide-notification-content":"hideNotificationContent"
+   "setting-hide-online":"hideOnlineStatus","setting-hide-notification-content":"hideNotificationContent",
+   "setting-confirm-external-links":"confirmExternalLinks","setting-confirm-preference-reset":"confirmPreferenceReset"
   };
   for(const [id,key] of Object.entries(map)){const el=$(id);if(el){if(el.type==="checkbox")el.checked=!!p[key];else el.value=String(key==="lineHeight"?Math.round(p[key]*10):p[key]);}}
   updateLabels(p);applyPrefs(p);
@@ -306,12 +308,12 @@
  }
  $("account-settings-close").addEventListener("click",()=>dialog.close());
  const settingIds=["setting-theme","setting-accent","setting-font-family","setting-font-size","setting-line-height","setting-message-width","setting-compact","setting-compact-sidebar","setting-hide-members","setting-show-avatars","setting-show-timestamps","setting-show-typing","setting-show-gifs","setting-enter-send","setting-sound","setting-desktop-notifications","setting-reduced-motion","setting-high-contrast","setting-confirm-signout"];
- settingIds.push("setting-hide-online","setting-hide-notification-content");
+ settingIds.push("setting-hide-online","setting-hide-notification-content","setting-confirm-external-links","setting-confirm-preference-reset");
  settingIds.forEach(id=>{
   const el=$(id);if(!el)return;
   el.addEventListener(el.type==="range"?"input":"change",savePrefs);
  });
- $("account-reset-preferences").addEventListener("click",()=>{try{localStorage.removeItem(PREF_KEY)}catch{}loadPrefs();say("All app preferences reset.")});
+ $("account-reset-preferences").addEventListener("click",()=>{if(readPrefs().confirmPreferenceReset&&!confirm("Reset all app preferences on this browser?"))return;try{localStorage.removeItem(PREF_KEY)}catch{}loadPrefs();window.echoUpdatePresencePreferences?.();say("All app preferences reset.")});
  $("account-export-preferences").addEventListener("click",()=>{
   const blob=new Blob([JSON.stringify(readPrefs(),null,2)],{type:"application/json"});
   const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="echo-settings.json";a.click();URL.revokeObjectURL(url);say("Settings export downloaded.");
@@ -332,6 +334,11 @@
   catch(error){say(error.message||String(error),true)}finally{button.disabled=false}
  });
  $("account-copy-id").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(S.user.id);say("Account ID copied.")}catch{say("Clipboard access is unavailable in this browser.",true)}});
+ document.addEventListener("click",event=>{
+  const link=event.target.closest?.("a[href]");if(!link)return;
+  const target=new URL(link.href,location.href);if(!/^https?:$/.test(target.protocol)||target.origin===location.origin)return;
+  if(readPrefs().confirmExternalLinks&&!confirm("You are opening an external website:\n"+target.hostname+"\nContinue?")){event.preventDefault();event.stopImmediatePropagation();}
+ },true);
  $("account-signout").addEventListener("click",async()=>{
   if(readPrefs().confirmSignout&&!confirm("Sign out of Echo on this device?"))return;
   const {error}=await S.db.auth.signOut();if(error)say(error.message,true);else dialog.close();
