@@ -40,15 +40,30 @@
     if (!S.profile) return;
     const name = document.getElementById("user-email");
     const avatar = document.getElementById("own-avatar");
+    const paint = (target, sizeClass) => {
+      if (!target) return;
+      target.replaceChildren();
+      target.classList.toggle("has-image", !!S.profile.avatar_url);
+      if (S.profile.avatar_url) {
+        const image = document.createElement("img");
+        image.src = S.profile.avatar_url;
+        image.alt = "";
+        image.loading = "lazy";
+        image.onerror = () => {
+          target.replaceChildren(document.createTextNode(initial(S.profile.username)));
+          target.classList.remove("has-image");
+        };
+        target.append(image);
+      } else {
+        target.textContent = initial(S.profile.username);
+      }
+      target.dataset.username = S.profile.username;
+      target.title = "@" + S.profile.username;
+    };
     if (name) name.textContent = S.profile.username;
-    if (avatar) {
-      avatar.innerHTML = S.profile.avatar_url ? '<img src="' + esc(S.profile.avatar_url) + '" alt="">' : esc(initial(S.profile.username));
-      avatar.classList.toggle("has-image", !!S.profile.avatar_url);
-    }
+    paint(avatar, "own");
     const preview = document.getElementById("profile-preview");
-    if (preview && !document.getElementById("profile-modal").open) {
-      preview.innerHTML = S.profile.avatar_url ? '<img src="' + esc(S.profile.avatar_url) + '" alt="">' : esc(initial(S.profile.username));
-    }
+    if (preview && !document.getElementById("profile-modal").open) paint(preview, "preview");
   }
 
   function startPresence() {
@@ -58,7 +73,20 @@
     S.presence
       .on("presence", { event: "sync" }, () => {
         const state = S.presence.presenceState();
-        S.onlineIds = new Set(Object.values(state).flat().map(p => p.user_id).filter(Boolean));
+        const presenceUsers = Object.values(state).flat();
+        S.onlineIds = new Set(presenceUsers.map(p => p.user_id).filter(Boolean));
+        presenceUsers.forEach(p => {
+          if (!p.user_id) return;
+          const current = S.profiles[p.user_id] || { id: p.user_id };
+          const updated = {
+            ...current,
+            username: p.username || current.username || "User",
+            avatar_url: p.avatar_url || current.avatar_url || null
+          };
+          S.profiles[p.user_id] = updated;
+          const memberIndex = S.memberProfiles.findIndex(member => member.id === p.user_id);
+          if (memberIndex >= 0) S.memberProfiles[memberIndex] = { ...S.memberProfiles[memberIndex], ...updated };
+        });
         renderMembers();
       })
       .subscribe(async status => {
@@ -124,8 +152,11 @@
           const image = document.createElement("img");
           image.src = profile.avatar_url;
           image.alt = "";
+          image.loading = "lazy";
+          image.onerror = () => { avatar.textContent = initial(profile.username); };
           avatar.append(image);
         } else avatar.textContent = initial(profile.username);
+        avatar.title = "@" + profile.username;
         const info = document.createElement("div");
         info.className = "member-name";
         const username = document.createElement("b");
@@ -187,8 +218,15 @@
         const image = document.createElement("img");
         image.src = avatarUrl;
         image.alt = "";
+        image.loading = "lazy";
+        image.onerror = () => {
+          avatar.textContent = initial(name);
+          avatar.classList.remove("has-image");
+        };
+        avatar.classList.add("has-image");
         avatar.append(image);
       } else avatar.textContent = initial(name);
+      avatar.title = "@" + name;
       const body = document.createElement("div");
       body.className = "message-body";
       const meta = document.createElement("div");
