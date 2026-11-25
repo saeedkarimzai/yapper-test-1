@@ -155,5 +155,65 @@ $("new-server").onclick=$("new-server-rail").onclick=()=>openModal("server");$("
 $("copy-id").onclick=async()=>{if(!S.server)return toast("Select a server first.");$("copy-id").disabled=true;try{const {data:code,error}=await S.db.rpc("create_server_invite",{p_server_id:S.server.id,p_expires_at:null,p_max_uses:null});if(error)throw error;const link=new URL(location.href);link.searchParams.set("invite",code);try{await navigator.clipboard.writeText(link.href);toast("Invite link copied!")}catch{toast("Invite code: "+code)}}catch(e){toast(err(e))}finally{$("copy-id").disabled=false}};
 $("cancel").onclick=()=>$("modal").close();$("modal-form").onsubmit=async e=>{e.preventDefault();let v=$("modal-input").value.trim(),mode=S.dialogMode;if(!v)return;$("modal-submit").disabled=true;try{if(mode==="server"){let {data:s,error}=await S.db.from("servers").insert({name:v.slice(0,60),owner_id:S.user.id}).select("id,name,owner_id,created_at").single();if(error)throw error;let {error:me}=await S.db.from("server_members").insert({server_id:s.id,user_id:S.user.id,role:"owner"});if(me)throw me;let {error:ce}=await S.db.from("channels").insert({server_id:s.id,name:"general"});if(ce)throw ce;await loadServers();await selectServer(s.id);toast("Server created! Use Invite to share it with friends.")}else if(mode==="channel"){if(!S.server)throw Error("Select a server first.");let name=v.toLowerCase().replace(/[^a-z0-9_-]+/g,"-").replace(/^-+|-+$/g,"").slice(0,60);if(!name)throw Error("Use at least one letter or number.");let {error}=await S.db.from("channels").insert({server_id:S.server.id,name});if(error)throw error;await selectServer(S.server.id);toast("Channel created.")}else{let {data:serverId,error}=await S.db.rpc("join_server_by_invite",{p_code:v});if(error)throw error;await loadServers();await selectServer(serverId);toast("Joined server!")}$("modal").close()}catch(e){toast(err(e))}finally{$("modal-submit").disabled=false}};
 $("signout").onclick=async()=>{let prefs={};try{prefs=JSON.parse(localStorage.getItem("yapper-app-preferences-v1")||"{}")}catch{}if(prefs.confirmSignout!==false&&!confirm("Sign out of YAPPER on this device?"))return;let {error}=await S.db.auth.signOut();if(error)toast(err(error));showAuth()};
+
+function openServerSettings(){
+ if(!S.server)return toast("Select a server first.");
+ const owner=S.server.owner_id===S.user.id;
+ $("server-settings-title").textContent=S.server.name;
+ $("server-settings-name").value=S.server.name;
+ $("server-settings-name").disabled=!owner;
+ $("server-settings-save").classList.toggle("hidden",!owner);
+ $("server-settings-role").textContent=owner?"You own this server. You can change its name.":"You are a member of this server.";
+ $("server-leave-button").disabled=owner;
+ $("server-leave-help").textContent=owner?"The server owner cannot leave their own server yet.":"Leave this community. You can rejoin later with an invite.";
+ $("server-settings-feedback").textContent="";
+ $("server-settings-modal").showModal();
+}
+$("server-settings-open").onclick=openServerSettings;
+$("server-settings-done").onclick=()=>$("server-settings-modal").close();
+$("server-settings-form").onsubmit=async e=>{
+ e.preventDefault();
+ if(!S.server||S.server.owner_id!==S.user.id)return;
+ const name=$("server-settings-name").value.trim().slice(0,60);
+ if(!name)return;
+ $("server-settings-save").disabled=true;
+ try{
+  const id=S.server.id;
+  const {data,error}=await S.db.from("servers").update({name}).eq("id",id).eq("owner_id",S.user.id).select("id,name,owner_id,created_at").single();
+  if(error)throw error;
+  if(!data)throw Error("You do not have permission to rename this server.");
+  S.servers=S.servers.map(server=>server.id===id?data:server);S.server=data;
+  $("server-name").textContent=data.name;$("server-settings-title").textContent=data.name;renderServers();
+  $("server-settings-feedback").textContent="Server name updated.";toast("Server renamed.");
+ }catch(error){$("server-settings-feedback").textContent=err(error)}
+ finally{$("server-settings-save").disabled=false}
+};
+$("server-settings-invite").onclick=async()=>{
+ if(!S.server)return;
+ const button=$("server-settings-invite");button.disabled=true;
+ try{
+  const {data:code,error}=await S.db.rpc("create_server_invite",{p_server_id:S.server.id,p_expires_at:null,p_max_uses:null});
+  if(error)throw error;
+  const link=new URL(location.href);link.searchParams.set("invite",code);
+  try{await navigator.clipboard.writeText(link.href);$("server-settings-feedback").textContent="Invite link copied to clipboard."}
+  catch{$("server-settings-feedback").textContent="Invite code: "+code}
+ }catch(error){$("server-settings-feedback").textContent=err(error)}
+ finally{button.disabled=false}
+};
+$("server-leave-button").onclick=async()=>{
+ if(!S.server||S.server.owner_id===S.user.id)return;
+ const current=S.server;
+ if(!confirm("Leave "+current.name+"? You will need a new invite to rejoin."))return;
+ const button=$("server-leave-button");button.disabled=true;
+ try{
+  const {error}=await S.db.from("server_members").delete().eq("server_id",current.id).eq("user_id",S.user.id);
+  if(error)throw error;
+  if(S.sub){const previous=S.sub;S.sub=null;await S.db.removeChannel(previous)}
+  S.server=null;S.channel=null;S.channels=[];S.messages=[];
+  $("server-settings-modal").close();await loadServers();toast("You left "+current.name+".");
+ }catch(error){$("server-settings-feedback").textContent=err(error)}
+ finally{button.disabled=false}
+};
+
 function loadSupabaseLibrary(){return new Promise((resolve,reject)=>{if(window.supabase?.createClient){resolve();return}const urls=["https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js","https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"];let index=0;const attempt=()=>{if(window.supabase?.createClient){resolve();return}if(index>=urls.length){reject(new Error("Could not load the Supabase library from either CDN."));return}const script=document.createElement("script");script.src=urls[index++];script.onload=()=>window.supabase?.createClient?resolve():attempt();script.onerror=attempt;document.head.appendChild(script)};attempt()})}
 function init(){if(SUPABASE_URL.includes("PASTE_YOUR")||SUPABASE_KEY.includes("PASTE_YOUR")){toast("Setup needed: add your Supabase URL and publishable key in app.js.");$("auth-submit").disabled=true;return}if(!window.supabase?.createClient){$("auth-submit").disabled=true;loadSupabaseLibrary().then(()=>{$("auth-submit").disabled=false;init()}).catch(e=>{toast("Supabase library could not load. Check your connection or try refreshing.");console.error(e)});return}S.db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);setupPasswordRecovery();S.db.auth.getSession().then(({data,error})=>{if(error)toast(err(error));if(data?.session?.user)startUser(data.session.user)});S.db.auth.onAuthStateChange((event,session)=>{if(event==="SIGNED_IN"&&session?.user)startUser(session.user);if(event==="SIGNED_OUT")showAuth()});setupAuth()}init();
