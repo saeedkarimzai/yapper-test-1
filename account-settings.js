@@ -13,8 +13,8 @@
  const sectionFor=section=>(section.querySelector("h3")?.textContent||"").replace(/^[^A-Za-z0-9]+/,"").trim();
  const entries=[
   {id:"account",label:"My Account",group:"USER SETTINGS",description:"Your account details, login methods and session controls.",match:["Account information","Change email","Change password","Session"]},
-  {id:"profile",label:"Profiles",group:"USER SETTINGS",description:"Customize the profile other people see.",profile:true,keywords:"profile avatar username picture"},
-  {id:"privacy",label:"Privacy & Safety",group:"USER SETTINGS",description:"Control privacy-related preferences and protect your account.",match:["Privacy & session"]},
+  {id:"profile",label:"Profile",group:"USER SETTINGS",description:"Your Echo identity, username and profile picture.",keywords:"profile profiles avatar pfp picture photo username"},
+  {id:"privacy",label:"Privacy & Safety",group:"USER SETTINGS",description:"Control your privacy and account session.",match:["Privacy & session"]},
   {id:"appearance",label:"Appearance",group:"APP SETTINGS",description:"Make Echo look and feel the way you like.",match:["Appearance"]},
   {id:"chat",label:"Chat",group:"APP SETTINGS",description:"Adjust the layout and behaviour of your conversations.",match:["Chat layout"]},
   {id:"notifications",label:"Notifications",group:"APP SETTINGS",description:"Choose how Echo lets you know about new messages.",match:["Notifications"]},
@@ -38,6 +38,7 @@
  const statusArea=document.createElement("div");statusArea.className="settings-status-area";statusArea.append(status);
  const hint=document.createElement("p");hint.className="settings-hint";hint.textContent="Changes to appearance and chat preferences save automatically on this device.";
  scroll.append(statusArea);
+ let activeSettingsTab="account";
  for(const entry of entries){
   if(!navGroups[entry.group]){
    const group=document.createElement("section");group.className="settings-nav-group";
@@ -46,13 +47,26 @@
   const button=document.createElement("button");button.type="button";button.textContent=entry.label;button.dataset.settingsTab=entry.id;
   button.addEventListener("click",()=>activateSettingsTab(entry.id));
   navGroups[entry.group].append(button);navButtons[entry.id]=button;
-  if(entry.profile)continue;
+
   const panel=document.createElement("section");panel.className="settings-view";panel.hidden=true;panel.id="settings-panel-"+entry.id;
   const title=document.createElement("h3");title.textContent=entry.label;
   const description=document.createElement("p");description.className="settings-view-description";description.textContent=entry.description;
   panel.append(title,description);
-  const selected=settingsSections.filter(section=>entry.match.some(name=>sectionFor(section).includes(name)));
-  selected.forEach(section=>panel.append(section));
+
+  if(entry.id==="profile"){
+   const card=document.createElement("section");card.className="account-settings-section settings-profile-card";
+   const avatar=document.createElement("div");avatar.className="settings-profile-avatar";avatar.id="settings-profile-avatar";
+   const info=document.createElement("div");info.className="settings-profile-info";
+   const username=document.createElement("h4");username.id="settings-profile-username";username.textContent="Loading profile…";
+   const detail=document.createElement("p");detail.id="settings-profile-detail";detail.textContent="Your picture and username appear beside your messages and in your communities.";
+   const edit=document.createElement("button");edit.type="button";edit.id="account-profile-edit";edit.className="primary";edit.textContent="Edit profile";
+   edit.addEventListener("click",()=>window.echoOpenProfileEditorFromSettings?.());
+   info.append(username,detail,edit);card.append(avatar,info);panel.append(card);
+   const note=document.createElement("p");note.className="settings-profile-note";note.textContent="Profile pictures support PNG, JPG, WEBP and GIF files up to 2 MB.";panel.append(note);
+  } else {
+   const selected=settingsSections.filter(section=>entry.match.some(name=>sectionFor(section).includes(name)));
+   selected.forEach(section=>panel.append(section));
+  }
   views[entry.id]=panel;scroll.append(panel);
  }
  const footer=document.createElement("footer");footer.className="settings-main-footer";footer.append(settingsFooter);
@@ -60,17 +74,41 @@
  layout.append(sidebar,main);
  dialog.replaceChildren(layout);
  if(originalTitle)originalTitle.remove();
+ function refreshSettingsProfile(profile){
+  const avatar=$("settings-profile-avatar");
+  const username=$("settings-profile-username");
+  const detail=$("settings-profile-detail");
+  if(!avatar||!username||!detail)return;
+  avatar.replaceChildren();
+  const name=profile?.username||"Your profile";
+  if(profile?.avatar_url){
+   const image=document.createElement("img");image.src=profile.avatar_url;image.alt="Your profile picture";image.loading="lazy";
+   image.onerror=()=>{avatar.textContent=name.charAt(0).toUpperCase();};
+   avatar.append(image);
+  }else avatar.textContent=name.charAt(0).toUpperCase()||"E";
+  username.textContent=profile?.username?"@"+profile.username:"Profile is still loading";
+  detail.textContent=profile?.avatar_url?"Your profile picture is visible beside your messages, in member lists, friends and private messages.":"Add a profile picture so people can recognize you around Echo.";
+  const edit=$("account-profile-edit");if(edit)edit.disabled=!profile;
+ }
+ window.echoRefreshSettingsProfile=refreshSettingsProfile;
+ window.echoOpenProfileEditorFromSettings=()=>{
+  if(typeof S==="undefined"||!S.profile){say("Your profile is still loading.",true);return;}
+  window.echoReturnToSettingsAfterProfile=true;
+  dialog.close();
+  $("edit-profile").click();
+ };
+ window.echoReopenSettingsAfterProfile=()=>{
+  fill();
+  activateSettingsTab("profile");
+  if(!dialog.open)dialog.showModal();
+ };
  function activateSettingsTab(id){
   const entry=entries.find(item=>item.id===id);if(!entry)return;
-  if(entry.profile){
-   dialog.close();
-   $("edit-profile").click();
-   return;
-  }
+  activeSettingsTab=id;
   for(const item of entries){
    navButtons[item.id].classList.toggle("active",item.id===id);
    navButtons[item.id].setAttribute("aria-current",item.id===id?"page":"false");
-   if(views[item.id])views[item.id].hidden=item.id!==id;
+   views[item.id].hidden=item.id!==id;
   }
   mainTitle.textContent=entry.label;
   mainDescription.textContent=entry.description;
@@ -80,24 +118,28 @@
   const query=search.value.trim().toLowerCase();
   let first=null;
   for(const entry of entries){
-   let matches=!query||entry.label.toLowerCase().includes(query)||String(entry.keywords||"").includes(query);
    const sections=entry.match?settingsSections.filter(section=>entry.match.some(name=>sectionFor(section).includes(name))):[];
-   if(query&&sections.some(section=>section.textContent.toLowerCase().includes(query)))matches=true;
+   const labelMatch=entry.label.toLowerCase().includes(query);
+   const keywordMatch=String(entry.keywords||"").toLowerCase().includes(query);
+   const sectionMatches=query?sections.filter(section=>section.textContent.toLowerCase().includes(query)):sections;
+   const matches=!query||labelMatch||keywordMatch||sectionMatches.length>0;
    navButtons[entry.id].hidden=!matches;
-   if(navButtons[entry.id].parentElement)navButtons[entry.id].parentElement.hidden=false;
-   sections.forEach(section=>{section.hidden=!!query&&!section.textContent.toLowerCase().includes(query)});
+   if(entry.match)sections.forEach(section=>{section.hidden=!!query&&!labelMatch&&!sectionMatches.includes(section)});
    if(matches&&!first)first=entry.id;
   }
   Object.values(navGroups).forEach(group=>{group.hidden=!Array.from(group.querySelectorAll("button")).some(button=>!button.hidden)});
-  if(query&&first)activateSettingsTab(first);
-  else if(!query)activateSettingsTab("account");
-  else if(!first){
-   for(const entry of entries)if(views[entry.id])views[entry.id].hidden=true;
-   mainTitle.textContent="No results";mainDescription.textContent="No settings match “"+search.value.trim()+"”.";
+  if(!query){activateSettingsTab(activeSettingsTab);return;}
+  if(first){activateSettingsTab(first);return;}
+  for(const entry of entries){
+   navButtons[entry.id].classList.remove("active");
+   navButtons[entry.id].setAttribute("aria-current","false");
+   views[entry.id].hidden=true;
   }
+  mainTitle.textContent="No results";
+  mainDescription.textContent="No settings match “"+search.value.trim()+"”.";
  }
  search.addEventListener("input",filterSettings);
- search.addEventListener("keydown",event=>{if(event.key==="Escape"){search.value="";filterSettings();}});
+ search.addEventListener("keydown",event=>{if(event.key==="Escape"){event.preventDefault();event.stopPropagation();search.value="";filterSettings();}});
  activateSettingsTab("account");
 
  const PREF_KEY="yapper-app-preferences-v1";
@@ -199,6 +241,8 @@
    $("account-user-id").textContent=S.user.id;
   }
   $("account-new-email").value="";$("account-password").value="";$("account-password-confirm").value="";
+  refreshSettingsProfile(typeof S!=="undefined"?S.profile:null);
+  search.value="";Object.values(navGroups).forEach(group=>group.hidden=false);activateSettingsTab("account");
   loadPrefs();say("");
  }
  $("account-settings-close").addEventListener("click",()=>dialog.close());
