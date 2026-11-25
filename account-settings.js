@@ -312,10 +312,17 @@
   const {error}=await S.db.auth.signOut();if(error)say(error.message,true);else dialog.close();
  });
  $("message-input").addEventListener("keydown",event=>{
-  if(event.key!=="Enter"||event.shiftKey)return;
+  if(event.key!=="Enter"||event.shiftKey||event.isComposing)return;
   const overrides=window.echoGetServerPrefOverrides?.(S.server?.id)||{};
+  const serverPrefs=window.echoGetServerPrefs?.(S.server?.id)||{};
   const enterSend=typeof overrides.enterToSend==="boolean"?overrides.enterToSend:readPrefs().enterSend;
-  if(!enterSend){event.preventDefault();if(event.ctrlKey||event.metaKey)$("message-form").requestSubmit();}
+  if(event.ctrlKey||event.metaKey){
+   if(serverPrefs.ctrlEnterNewline)return;
+   event.preventDefault();
+   $("message-form").requestSubmit();
+   return;
+  }
+  if(enterSend){event.preventDefault();$("message-form").requestSubmit();}
  });
  applyPrefs();
  if(typeof S!=="undefined"&&S.db)S.db.auth.onAuthStateChange((event,session)=>{if(session?.user&&dialog.open)fill()});
