@@ -1371,3 +1371,18 @@ html[data-theme="light"] .server-pref-availability{color:#757d9d}
 /* The Echo logo is a real navigation button, not a decorative dead-end. */
 .rail .mark{display:grid;place-items:center;flex:none;border:0;cursor:pointer;color:inherit;appearance:none;-webkit-appearance:none;}
 .rail .mark:focus-visible{outline:2px solid #bda7ff;outline-offset:3px}
+
+/* Message-level options */
+.message{position:relative}
+.message-toolbar{margin-left:auto;position:relative;display:flex;align-items:center}
+.message-menu-toggle{border:0;background:transparent;color:var(--muted,#aab0c5);border-radius:7px;padding:3px 9px;cursor:pointer;opacity:0;transition:opacity .15s,background .15s}
+.message:hover .message-menu-toggle,.message-menu-toggle:focus-visible{opacity:1}
+.message-menu-toggle:hover{background:#ffffff14;color:var(--text,#fff)}
+.message-menu{position:absolute;z-index:30;right:0;top:calc(100% + 5px);min-width:160px;padding:5px;background:var(--panel,#202238);border:1px solid var(--border,#ffffff20);border-radius:10px;box-shadow:0 12px 32px #0008;display:grid;gap:2px}
+.message-menu.hidden{display:none}
+.message-menu button{border:0;background:transparent;color:var(--text,#fff);text-align:left;padding:9px 10px;border-radius:7px;cursor:pointer;font:inherit;font-size:13px}
+.message-menu button:hover{background:#8b72ff30}
+.message-menu button[data-message-action="delete"]{color:#ff777f}
+.message .meta{display:flex;align-items:center;gap:10px}
+@media(hover:none){.message-menu-toggle{opacity:1}}
+.message .avatar img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
