@@ -5,8 +5,10 @@ const $=id=>document.getElementById(id);const S={db:null,user:null,servers:[],se
 function setLiveStatus(status){const el=$("live-status");if(!el)return;const states={connecting:["◌ CONNECTING…",true],online:["● LIVE CHAT",false],offline:["● CONNECTION ISSUE",true],idle:["● NOT CONNECTED",true]};const v=states[status]||states.idle;el.textContent=v[0];el.classList.toggle("offline",v[1]);el.title=status==="online"?"Live updates connected":status==="connecting"?"Connecting to live updates":"Live updates may be unavailable"}
 function toast(s){let e=$("toast");e.textContent=s;e.classList.add("show");clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>e.classList.remove("show"),4200)}
 function err(e){return e?.message||String(e)}function initial(s){return (s||"Y").trim().charAt(0).toUpperCase()||"Y"}function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function showAuth(){if(S.sub)S.db.removeChannel(S.sub);S.sub=null;setLiveStatus("idle");S.user=null;$("auth").classList.remove("hidden");$("app").classList.add("hidden")}
-function showApp(){ $("auth").classList.add("hidden");$("app").classList.remove("hidden");$("user-email").textContent=S.user.email||"Echo";loadServers().catch(e=>toast(err(e)));const invite=new URLSearchParams(location.search).get("invite");if(invite){openJoinServerPage();$("join-invite-input").value=invite;history.replaceState(null,"",location.pathname)}}
+function dismissPreloader(){const loader=$("echo-preloader");if(!loader||loader.classList.contains("is-hidden"))return;loader.classList.add("is-hidden");setTimeout(()=>loader.remove(),500)}
+setTimeout(dismissPreloader,10000);
+function showAuth(){dismissPreloader();if(S.sub)S.db.removeChannel(S.sub);S.sub=null;setLiveStatus("idle");S.user=null;$("auth").classList.remove("hidden");$("app").classList.add("hidden")}
+function showApp(){dismissPreloader(); $("auth").classList.add("hidden");$("app").classList.remove("hidden");$("user-email").textContent=S.user.email||"Echo";loadServers().catch(e=>toast(err(e)));const invite=new URLSearchParams(location.search).get("invite");if(invite){openJoinServerPage();$("join-invite-input").value=invite;history.replaceState(null,"",location.pathname)}}
 function setupPasswordRecovery(){
  S.db.auth.onAuthStateChange(async(event)=>{
   if(event!=="PASSWORD_RECOVERY")return;
