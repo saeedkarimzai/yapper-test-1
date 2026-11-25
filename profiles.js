@@ -9,33 +9,51 @@
   S.profileBootUser = null;
 
   async function ensureProfile(user) {
-    if (!user || S.profileBootUser === user.id) return;
+    if (!user) return null;
+    if (S.profile?.id === user.id) return S.profile;
+    if (S.profileBootUser === user.id && S.profileReady) return S.profileReady;
     S.profileBootUser = user.id;
     S.user = user;
-    try {
-      let result = await S.db.from("profiles").select("id,username,avatar_url").eq("id", user.id).maybeSingle();
-      if (result.error) throw result.error;
-      let profile = result.data;
-      if (!profile) {
-        const base = (user.email || "yapper").split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "_").slice(0, 14) || "yapper";
-        profile = { id: user.id, username: base + "_" + user.id.slice(0, 6), avatar_url: null };
-        const created = await S.db.from("profiles").insert(profile).select("id,username,avatar_url").single();
-        if (created.error) throw created.error;
-        profile = created.data;
+    const profileButton = document.getElementById("edit-profile");
+    const profileHint = profileButton?.querySelector(".user small");
+    if (profileHint) profileHint.textContent = "Loading profile…";
+    const task = (async () => {
+      try {
+        let result = await S.db.from("profiles").select("id,username,avatar_url").eq("id", user.id).maybeSingle();
+        if (result.error) throw result.error;
+        let profile = result.data;
+        if (!profile) {
+          const base = (user.email || "echo").split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "_").slice(0, 14) || "echo";
+          profile = { id: user.id, username: base + "_" + user.id.slice(0, 6), avatar_url: null };
+          const created = await S.db.from("profiles").insert(profile).select("id,username,avatar_url").single();
+          if (created.error) throw created.error;
+          profile = created.data;
+        }
+        S.profile = profile;
+        S.profiles[profile.id] = profile;
+        if (profile.avatar_url) {
+          const warmAvatar = new Image();
+          warmAvatar.decoding = "async";
+          warmAvatar.src = profile.avatar_url;
+          if (warmAvatar.decode) warmAvatar.decode().catch(() => {});
+        }
+        paintOwnProfile();
+        startPresence();
+        if (S.server) await loadMembers();
+        if (S.messages && S.messages.length) await hydrateMessageProfiles();
+        if (typeof renderMessages === "function") renderMessages();
+        return profile;
+      } catch (e) {
+        S.profileBootUser = null;
+        throw e;
+      } finally {
+        if (profileHint) profileHint.textContent = S.profile?.id === user.id ? "Edit profile" : "Profile unavailable";
       }
-      S.profile = profile;
-      S.profiles[profile.id] = profile;
-      paintOwnProfile();
-      startPresence();
-      if (S.server) await loadMembers();
-      if (S.messages && S.messages.length) await hydrateMessageProfiles();
-      if (typeof renderMessages === "function") renderMessages();
-    } catch (e) {
-      S.profileBootUser = null;
-      toast("Profile loading: " + (e.message || e));
-    }
+    })();
+    S.profileReady = task;
+    try { return await task; }
+    finally { if (S.profileReady === task) S.profileReady = null; }
   }
-
   function paintOwnProfile() {
     if (!S.profile) return;
     const name = document.getElementById("user-email");
@@ -390,8 +408,14 @@
   const profileFile = document.getElementById("profile-file");
   const profilePreview = document.getElementById("profile-preview");
   const removeAvatarButton = document.getElementById("profile-remove-picture");
-  if (editButton) editButton.addEventListener("click", () => {
-    if (!S.profile) return toast("Your profile is still loading.");
+  if (editButton) editButton.addEventListener("click", async () => {
+    if (!S.profile && S.user) {
+      const hint = editButton.querySelector(".user small");
+      if (hint) hint.textContent = "Loading profile…";
+      try { await ensureProfile(S.user); }
+      catch (error) { toast("Couldn't load your profile: " + (error.message || error)); return; }
+    }
+    if (!S.profile) return toast("Your profile couldn't be loaded. Try again.");
     removeAvatarRequested = false;
     document.getElementById("profile-username").value = S.profile.username;
     profileFile.value = "";
