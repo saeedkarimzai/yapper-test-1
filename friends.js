@@ -205,7 +205,10 @@
     channelNav.addEventListener("click", () => appShell.classList.remove("mobile-channels-open"));
   }
   if (chatPane && appShell) {
-    chatPane.addEventListener("click", () => appShell.classList.remove("mobile-channels-open"));
+    chatPane.addEventListener("click", event => {
+      if (event.target.closest("#mobile-sidebar-toggle")) return;
+      appShell.classList.remove("mobile-channels-open");
+    });
   }
   const mobileFriendsButton = $f("open-friends-mobile");
   if (mobileFriendsButton) mobileFriendsButton.addEventListener("click", openFriends);
