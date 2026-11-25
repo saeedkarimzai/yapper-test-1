@@ -76,6 +76,14 @@
     }catch(x){note(x.message||String(x),true)}
     finally{$d("dm-open-button").disabled=false;}
   }
+  const openDmsButton=$d("open-dms");
+  if(openDmsButton)openDmsButton.addEventListener("click",()=>{
+    const modal=$d("dm-modal");
+    if(!modal)return;
+    if(!userId)return note("Sign in first to use DMs.",true);
+    if(!modal.open)modal.showModal();
+    setTimeout(()=>$d("dm-username")?.focus(),40);
+  });
   $d("dm-open-form").addEventListener("submit",openChat);
   $d("dm-message-form").addEventListener("submit",async e=>{
     e.preventDefault();const content=$d("dm-message-input").value.trim();if(!content||!peerId||!userId)return;
