@@ -63,7 +63,7 @@
   theme:"dark",accent:"#9676ff",fontFamily:"DM Sans",fontSize:13,lineHeight:1.6,messageWidth:100,
   compact:false,compactSidebar:false,hideMembers:false,showAvatars:true,showTimestamps:true,
   showTyping:true,showGifs:true,enterSend:true,sound:false,desktopNotifications:false,
-  reducedMotion:false,highContrast:false,confirmSignout:true
+  reducedMotion:false,highContrast:false,confirmSignout:true,tabIcon:"echo",customTabIcon:""
  };
  const $status=$("setting-notification-status");
  const say=(message,bad=false)=>{status.textContent=message;status.classList.toggle("error",bad)};
@@ -71,6 +71,8 @@
  function writePrefs(p){localStorage.setItem(PREF_KEY,JSON.stringify(p))}
  function applyPrefs(p=readPrefs()){
   const root=document.documentElement;
+  const favicon=document.querySelector("link[rel~='icon']");
+  if(favicon){const icons={echo:"<path d='M76 24H42Q30 24 30 36V64Q30 76 42 76H76M40 50H66' fill='none' stroke='#c18aff' stroke-width='10' stroke-linecap='round'/>",purple:"<text x='50%' y='70%' text-anchor='middle' font-size='72' font-weight='bold' fill='#b58aff'>E</text>",blue:"<text x='50%' y='70%' text-anchor='middle' font-size='72' font-weight='bold' fill='#62b7ff'>E</text>",pink:"<text x='50%' y='70%' text-anchor='middle' font-size='72' font-weight='bold' fill='#ff83c8'>E</text>",black:"<text x='50%' y='70%' text-anchor='middle' font-size='72' font-weight='bold' fill='#ffffff'>E</text>"};const art=p.customTabIcon||("data:image/svg+xml,"+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='#171027'/>"+(icons[p.tabIcon]||icons.echo)+"</svg>"));favicon.href=art;favicon.type=art.startsWith("data:image/")&&!art.startsWith("data:image/svg+xml")?"image/png":"image/svg+xml";}
   root.dataset.theme=p.theme;
   root.style.setProperty("--purple",p.accent);
   root.style.setProperty("--yapper-message-size",p.fontSize+"px");
@@ -98,7 +100,8 @@
    showGifs:$("setting-show-gifs").checked,enterSend:$("setting-enter-send").checked,
    sound:$("setting-sound").checked,desktopNotifications:$("setting-desktop-notifications").checked,
    reducedMotion:$("setting-reduced-motion").checked,highContrast:$("setting-high-contrast").checked,
-   confirmSignout:$("setting-confirm-signout").checked
+   confirmSignout:$("setting-confirm-signout").checked,
+   tabIcon:$("setting-tab-icon").value,customTabIcon:readPrefs().customTabIcon||""
   };
  }
  function updateLabels(p){
@@ -120,7 +123,7 @@
    "setting-show-avatars":"showAvatars","setting-show-timestamps":"showTimestamps","setting-show-typing":"showTyping",
    "setting-show-gifs":"showGifs","setting-enter-send":"enterSend","setting-sound":"sound",
    "setting-desktop-notifications":"desktopNotifications","setting-reduced-motion":"reducedMotion",
-   "setting-high-contrast":"highContrast","setting-confirm-signout":"confirmSignout"
+   "setting-high-contrast":"highContrast","setting-confirm-signout":"confirmSignout","setting-tab-icon":"tabIcon"
   };
   for(const [id,key] of Object.entries(map)){const el=$(id);if(el){if(el.type==="checkbox")el.checked=!!p[key];else el.value=String(key==="lineHeight"?Math.round(p[key]*10):p[key]);}}
   updateLabels(p);applyPrefs(p);
@@ -159,9 +162,12 @@
   loadPrefs();say("");
  }
  $("account-settings-close").addEventListener("click",()=>dialog.close());
- const settingIds=["setting-theme","setting-accent","setting-font-family","setting-font-size","setting-line-height","setting-message-width","setting-compact","setting-compact-sidebar","setting-hide-members","setting-show-avatars","setting-show-timestamps","setting-show-typing","setting-show-gifs","setting-enter-send","setting-sound","setting-desktop-notifications","setting-reduced-motion","setting-high-contrast","setting-confirm-signout"];
+ const settingIds=["setting-theme","setting-accent","setting-font-family","setting-font-size","setting-line-height","setting-message-width","setting-compact","setting-compact-sidebar","setting-hide-members","setting-show-avatars","setting-show-timestamps","setting-show-typing","setting-show-gifs","setting-enter-send","setting-sound","setting-desktop-notifications","setting-reduced-motion","setting-high-contrast","setting-confirm-signout","setting-tab-icon"];
  settingIds.forEach(id=>{const el=$(id);el.addEventListener("input",savePrefs);el.addEventListener("change",savePrefs)});
  $("account-reset-preferences").addEventListener("click",()=>{try{localStorage.removeItem(PREF_KEY)}catch{}loadPrefs();say("All app preferences reset.")});
+ const tabIconUpload=$("setting-tab-icon-upload");
+ if(tabIconUpload)tabIconUpload.addEventListener("change",()=>{const file=tabIconUpload.files?.[0];if(!file)return;if(!/^image\\/(png|jpeg|webp|svg\\+xml)$/.test(file.type)||file.size>256*1024){say("Choose a PNG, JPG, WEBP or SVG under 256 KB.",true);tabIconUpload.value="";return;}const reader=new FileReader();reader.onload=()=>{const p=readPrefs();p.customTabIcon=String(reader.result);p.tabIcon="custom";writePrefs(p);$("setting-tab-icon").value="custom";applyPrefs(p);say("Browser tab logo updated.");};reader.readAsDataURL(file);});
+ $("setting-tab-icon").addEventListener("change",()=>{const p=readPrefs();p.tabIcon=$("setting-tab-icon").value;if(p.tabIcon!=="custom")p.customTabIcon="";writePrefs(p);applyPrefs(p);say("Browser tab logo updated.");});
  $("account-export-preferences").addEventListener("click",()=>{
   const blob=new Blob([JSON.stringify(readPrefs(),null,2)],{type:"application/json"});
   const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="yapper-settings.json";a.click();URL.revokeObjectURL(url);say("Settings export downloaded.");
