@@ -16,7 +16,7 @@
   {id:"profile",label:"Profile",group:"USER SETTINGS",description:"Your Echo identity, username and profile picture.",keywords:"profile profiles avatar pfp picture photo username"},
   {id:"privacy",label:"Privacy & Safety",group:"USER SETTINGS",description:"Choose what other people can see and how Echo handles your data.",match:["Privacy & session"]},
   {id:"devices",label:"Devices",group:"USER SETTINGS",description:"Review this browser session and manage your sign-in.",keywords:"devices sessions browser login sign out security"},
-  {id:"data",label:"Data & Privacy",group:"USER SETTINGS",description:"Export your local preferences and control data stored in this browser.",keywords:"data export download reset storage local privacy"}
+  {id:"data",label:"Data & Privacy",group:"USER SETTINGS",description:"Export your local preferences and control data stored in this browser.",keywords:"data export download reset storage local privacy"},
   {id:"appearance",label:"Appearance",group:"APP SETTINGS",description:"Make Echo look and feel the way you like.",match:["Appearance"]},
   {id:"chat",label:"Chat",group:"APP SETTINGS",description:"Adjust the layout and behaviour of your conversations.",match:["Chat layout"]},
   {id:"notifications",label:"Notifications",group:"APP SETTINGS",description:"Choose how Echo lets you know about new messages.",match:["Notifications"]},
