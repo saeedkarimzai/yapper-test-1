@@ -129,6 +129,7 @@
             username: S.profile.username,
             avatar_url: S.profile.avatar_url || null,
             hidden_server_ids: hiddenServerIdsFromPreferences(),
+            hide_online_status: window.echoGetAppPrefs?.().hideOnlineStatus === true,
             online_at: new Date().toISOString()
           });
         }
