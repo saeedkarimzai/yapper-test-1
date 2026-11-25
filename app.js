@@ -156,6 +156,51 @@ $("copy-id").onclick=async()=>{if(!S.server)return toast("Select a server first.
 $("cancel").onclick=()=>$("modal").close();$("modal-form").onsubmit=async e=>{e.preventDefault();let v=$("modal-input").value.trim(),mode=S.dialogMode;if(!v)return;$("modal-submit").disabled=true;try{if(mode==="server"){let {data:s,error}=await S.db.from("servers").insert({name:v.slice(0,60),owner_id:S.user.id}).select("id,name,owner_id,created_at").single();if(error)throw error;let {error:me}=await S.db.from("server_members").insert({server_id:s.id,user_id:S.user.id,role:"owner"});if(me)throw me;let {error:ce}=await S.db.from("channels").insert({server_id:s.id,name:"general"});if(ce)throw ce;await loadServers();await selectServer(s.id);toast("Server created! Use Invite to share it with friends.")}else if(mode==="channel"){if(!S.server)throw Error("Select a server first.");let name=v.toLowerCase().replace(/[^a-z0-9_-]+/g,"-").replace(/^-+|-+$/g,"").slice(0,60);if(!name)throw Error("Use at least one letter or number.");let {error}=await S.db.from("channels").insert({server_id:S.server.id,name});if(error)throw error;await selectServer(S.server.id);toast("Channel created.")}else{let {data:serverId,error}=await S.db.rpc("join_server_by_invite",{p_code:v});if(error)throw error;await loadServers();await selectServer(serverId);toast("Joined server!")}$("modal").close()}catch(e){toast(err(e))}finally{$("modal-submit").disabled=false}};
 $("signout").onclick=async()=>{let prefs={};try{prefs=JSON.parse(localStorage.getItem("yapper-app-preferences-v1")||"{}")}catch{}if(prefs.confirmSignout!==false&&!confirm("Sign out of YAPPER on this device?"))return;let {error}=await S.db.auth.signOut();if(error)toast(err(error));showAuth()};
 
+
+const SERVER_PREFS=[
+ ["Display",[
+ ["compactChannels","Compact channel list"],["showChannelCounts","Show channel count badges"],["showServerDescriptions","Show server descriptions"],["highlightMentions","Highlight @mentions"],["dimMutedChannels","Dim muted channels"],["showMemberAvatars","Show member avatars"],["showTimestamps","Show message timestamps"],["showEditedLabels","Show edited labels"],["showLinkPreviews","Show link previews"],["reduceServerAnimations","Reduce server animations"]
+ ]],
+ ["Notifications",[
+ ["notifyMessages","Notify for new messages"],["notifyMentions","Notify for mentions"],["notifyReplies","Notify for replies"],["notifyInvites","Notify about invite activity"],["notificationSound","Play notification sounds"],["desktopAlerts","Allow desktop alerts"],["quietMode","Quiet mode"],["muteWhenFocused","Mute alerts while this server is open"]
+ ]],
+ ["Privacy & safety",[
+ ["hideOnlineStatus","Hide my online status in this server"],["hideActivity","Hide my activity"],["filterUnknownLinks","Warn about unfamiliar links"],["blurSensitiveMedia","Blur sensitive media"],["hideEmbeds","Hide link embeds"],["confirmExternalLinks","Confirm before opening external links"],["filterProfanity","Filter offensive words"],["limitDirectMessages","Limit messages from non-friends"]
+ ]],
+ ["Chat experience",[
+ ["enterToSend","Enter sends messages"],["ctrlEnterNewline","Ctrl + Enter inserts a line break"],["spellcheck","Spellcheck messages"],["autoScroll","Auto-scroll to newest messages"],["rememberChannel","Remember last opened channel"],["showTyping","Show typing indicators"],["showReactions","Show message reactions"],["showPinnedFirst","Keep pinned items easy to spot"]
+ ]],
+ ["Server tools",[
+ ["confirmInvites","Confirm before creating invite links"],["copyInviteAutomatically","Copy invite links automatically"],["showServerId","Show server ID in settings"],["confirmLeave","Confirm before leaving"],["warnBeforeDelete","Warn before destructive actions"],["showJoinDate","Show when I joined"],["showRoleLabels","Show member role labels"],["enableQuickSwitch","Enable quick server switching"],["rememberSearch","Remember server search"],["showWelcomeTips","Show server tips"]
+ ]]
+];
+function serverPrefsKey(id){return "echo-server-preferences-v1:"+id}
+function readServerPrefs(id){try{return JSON.parse(localStorage.getItem(serverPrefsKey(id))||"{}")}catch{return {}}}
+function renderServerPrefs(){
+ const root=$("server-settings-groups");if(!root||!S.server)return;
+ const prefs=readServerPrefs(S.server.id),query=($("server-settings-search").value||"").trim().toLowerCase();root.innerHTML="";
+ SERVER_PREFS.forEach(([group,items])=>{
+  const visible=items.filter(([key,label])=>(key+" "+label+" "+group).toLowerCase().includes(query));if(!visible.length)return;
+  const section=document.createElement("div");section.className="server-pref-group";
+  const title=document.createElement("h4");title.textContent=group;section.append(title);
+  visible.forEach(([key,label])=>{
+   const row=document.createElement("label");row.className="server-pref-row";
+   const copy=document.createElement("span");copy.textContent=label;
+   const input=document.createElement("input");input.type="checkbox";input.checked=prefs[key]===true;input.dataset.pref=key;
+   input.addEventListener("change",()=>{const current=readServerPrefs(S.server.id);current[key]=input.checked;localStorage.setItem(serverPrefsKey(S.server.id),JSON.stringify(current));});
+   row.append(copy,input);section.append(row);
+  });
+  root.append(section);
+ });
+ if(!root.children.length){const empty=document.createElement("p");empty.className="muted";empty.textContent="No matching settings.";root.append(empty)}
+}
+$("server-settings-search").addEventListener("input",renderServerPrefs);
+$("server-settings-reset").onclick=()=>{
+ if(!S.server)return;
+ if(!confirm("Reset all 40 personal preferences for this server?"))return;
+ localStorage.removeItem(serverPrefsKey(S.server.id));renderServerPrefs();toast("Server preferences reset.");
+};
+
 function openServerSettings(){
  if(!S.server)return toast("Select a server first.");
  const owner=S.server.owner_id===S.user.id;
@@ -167,6 +212,7 @@ function openServerSettings(){
  $("server-leave-button").disabled=owner;
  $("server-leave-help").textContent=owner?"The server owner cannot leave their own server yet.":"Leave this community. You can rejoin later with an invite.";
  $("server-settings-feedback").textContent="";
+ $("server-settings-search").value="";renderServerPrefs();
  $("server-settings-modal").showModal();
 }
 $("server-settings-open").onclick=openServerSettings;
