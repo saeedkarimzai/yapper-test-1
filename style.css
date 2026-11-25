@@ -320,5 +320,5 @@ html.yapper-reduced-motion *,html.yapper-reduced-motion *::before,html.yapper-re
 html[data-theme="light"] .settings-search{background:#fff;color:#242638;border-color:#c7cad8}
 html[data-theme="light"] .settings-search::placeholder{color:#777d90}
 
-/* Custom YAPPER identity */
+/* Custom Echo identity */
 .brand{display:flex;align-items:center}.brand-logo{display:block;width:220px;max-width:100%;height:auto}.mark{padding:0;overflow:hidden;background:transparent}.rail-logo{width:100%;height:100%;object-fit:contain;border-radius:inherit}@media(max-width:620px){.brand-logo{width:190px}}
