@@ -1275,3 +1275,18 @@ html[data-theme="light"] .settings-profile-avatar{border-color:#9271e8}
 html[data-theme="light"] .settings-nav button.active{
  background:color-mix(in srgb,var(--purple),white 88%);color:#342c5b;
 }
+
+/* Multiline message composer and remaining server preference controls */
+.composer textarea#message-input{
+ flex:1;min-width:0;width:100%;min-height:28px;height:28px;max-height:150px;
+ resize:none;overflow-y:auto;border:0;outline:0;background:transparent;
+ color:#f4f2ff;font:14px 'DM Sans',sans-serif;line-height:1.45;
+ padding:6px 8px;box-shadow:none;
+}
+.composer textarea#message-input:focus{outline:0;box-shadow:none;border:0}
+.composer textarea#message-input::placeholder{color:#9ca7ca}
+html[data-theme="light"] .composer textarea#message-input{color:#303253}
+html[data-theme="light"] .composer textarea#message-input::placeholder{color:#73799b}
+html.yapper-server-hide-reactions .reaction-chip,
+html.yapper-server-hide-reactions .reaction-add,
+html.yapper-server-hide-reactions .reaction-picker{display:none!important}
