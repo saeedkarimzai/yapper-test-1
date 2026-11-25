@@ -1302,3 +1302,6 @@ html[data-theme="light"] .server-pref-availability{color:#757d9d}
 
 /* Expanded Discord-style user settings pages */
 .settings-info-card{display:grid;gap:12px}.settings-info-card h4{margin:0;font-size:15px}.settings-info-card p{margin:0;overflow-wrap:anywhere}.settings-info-card button{justify-self:start}.settings-info-card #settings-device-browser{font-size:12px;opacity:.75;max-height:72px;overflow:auto}
+
+/* Profile and My Account detail controls */
+.settings-profile-custom{display:grid;gap:10px}.settings-profile-custom h4{margin:0 0 4px}.settings-profile-custom textarea,.settings-profile-custom input:not([type=checkbox]),.settings-profile-custom select{width:100%;box-sizing:border-box;background:var(--panel,rgba(255,255,255,.045));color:inherit;border:1px solid var(--border,rgba(255,255,255,.12));border-radius:9px;padding:10px;font:inherit}.settings-profile-custom textarea{resize:vertical;min-height:76px}.settings-profile-custom small{opacity:.7;text-align:right}.settings-profile-card{border-top:3px solid var(--profile-accent,#9676ff)}.settings-inline-actions{display:flex;flex-wrap:wrap;gap:8px}.settings-inline-actions button{margin:0}.settings-info-card button{max-width:100%}
