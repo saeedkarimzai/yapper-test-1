@@ -321,7 +321,8 @@
         const remove = document.createElement("button");
         remove.type = "button"; remove.textContent = "Delete"; remove.title = "Delete your message";
         remove.addEventListener("click", async () => {
-          if (!window.confirm("Delete this message? This cannot be undone.")) return;
+          const deletePreferences = window.echoGetServerPrefs?.(S.server?.id) || {};
+          if (deletePreferences.warnBeforeDelete !== false && !window.confirm("Delete this message? This cannot be undone.")) return;
           remove.disabled = true;
           try {
             const result = await S.db.from("messages").delete().eq("id", message.id).eq("user_id", S.user.id).select("id").maybeSingle();
