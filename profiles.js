@@ -67,6 +67,34 @@
     if (typeof window.echoRefreshSettingsProfile === "function") window.echoRefreshSettingsProfile(S.profile);
   }
 
+  function hiddenServerIdsFromPreferences() {
+    const prefix = "echo-server-preferences-v1:";
+    const hidden = [];
+    try {
+      for (let index = 0; index < localStorage.length; index++) {
+        const key = localStorage.key(index);
+        if (!key || !key.startsWith(prefix)) continue;
+        try {
+          const saved = JSON.parse(localStorage.getItem(key) || "{}");
+          if (saved.hideOnlineStatus === true) hidden.push(key.slice(prefix.length));
+        } catch (_) {}
+      }
+    } catch (_) {}
+    return hidden;
+  }
+
+  function updatePresencePreferences() {
+    if (!S.presence || !S.user || !S.profile) return;
+    S.presence.track({
+      user_id: S.user.id,
+      username: S.profile.username,
+      avatar_url: S.profile.avatar_url || null,
+      hidden_server_ids: hiddenServerIdsFromPreferences(),
+      online_at: new Date().toISOString()
+    }).catch(() => {});
+  }
+  window.echoUpdatePresencePreferences = updatePresencePreferences;
+
   function startPresence() {
     if (!S.profile || !S.user) return;
     if (S.presence) S.db.removeChannel(S.presence);
@@ -82,7 +110,8 @@
           const updated = {
             ...current,
             username: p.username || current.username || "User",
-            avatar_url: Object.prototype.hasOwnProperty.call(p, "avatar_url") ? p.avatar_url : (current.avatar_url || null)
+            avatar_url: Object.prototype.hasOwnProperty.call(p, "avatar_url") ? p.avatar_url : (current.avatar_url || null),
+            hidden_server_ids: Array.isArray(p.hidden_server_ids) ? p.hidden_server_ids : (current.hidden_server_ids || [])
           };
           S.profiles[p.user_id] = updated;
           const memberIndex = S.memberProfiles.findIndex(member => member.id === p.user_id);
@@ -97,6 +126,7 @@
             user_id: S.user.id,
             username: S.profile.username,
             avatar_url: S.profile.avatar_url || null,
+            hidden_server_ids: hiddenServerIdsFromPreferences(),
             online_at: new Date().toISOString()
           });
         }
@@ -115,6 +145,7 @@
     const membershipsById = Object.fromEntries(memberships.map(row => [row.user_id, row]));
     S.memberProfiles = (profiles.data || []).map(profile => ({
       ...profile,
+      ...(S.profiles[profile.id] || {}),
       role: membershipsById[profile.id]?.role || "member",
       joined_at: null
     }));
@@ -134,6 +165,7 @@
     }
     const serverPreferences = window.echoGetServerPrefs?.(S.server.id) || {};
     const isOnline = profile => S.onlineIds.has(profile.id) &&
+      !(Array.isArray(profile.hidden_server_ids) && profile.hidden_server_ids.includes(S.server.id)) &&
       !(profile.id === S.user?.id && serverPreferences.hideOnlineStatus);
     const people = S.memberProfiles.slice().sort((a, b) =>
       Number(isOnline(b)) - Number(isOnline(a)) || a.username.localeCompare(b.username)
