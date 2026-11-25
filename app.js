@@ -104,8 +104,42 @@ function setupAuth(){
 async function startUser(u){if(S.user?.id===u.id&&!$("app").classList.contains("hidden"))return;S.user=u;showApp()}
 async function loadServers(){let {data,error}=await S.db.from("server_members").select("server_id,servers(id,name,owner_id,created_at,discoverable,description,category)").eq("user_id",S.user.id);if(error)throw error;S.servers=(data||[]).map(x=>x.servers).filter(Boolean);renderServers();if(S.servers.length){await selectServer(S.server&&S.servers.some(x=>x.id===S.server.id)?S.server.id:S.servers[0].id)}else{S.server=null;S.channels=[];S.channel=null;renderChannels();$("server-name").textContent="Pick a server";$("messages").innerHTML="";$("empty").classList.remove("hidden");$("empty").querySelector("h2").textContent="Welcome to YAPPER."; $("empty").querySelector("p").textContent="Create a server or join one to start chatting."; $("message-input").disabled=true;$("send").disabled=true;if($("emoji-toggle"))$("emoji-toggle").disabled=true}}
 function renderServers(){let root=$("servers");root.innerHTML="";S.servers.forEach(s=>{let b=document.createElement("button");b.className="server-pill"+(S.server?.id===s.id?" active":"");b.textContent=initial(s.name);b.title=s.name;b.onclick=()=>selectServer(s.id).catch(e=>toast(err(e)));root.append(b)})}
-async function selectServer(id){S.server=S.servers.find(s=>s.id===id)||null;S.channel=null;renderServers();$("server-name").textContent=S.server?.name||"Pick a server";if(!S.server)return;let {data,error}=await S.db.from("channels").select("id,server_id,name,created_at").eq("server_id",id).order("created_at");if(error)throw error;S.channels=data||[];renderChannels();if(S.channels.length)await selectChannel(S.channels[0].id);else{S.messages=[];renderMessages();$("channel-name").textContent="No channels";$("channel-desc").textContent="Create a channel to start talking.";$("message-input").disabled=true;$("send").disabled=true;$("empty").classList.remove("hidden");$("empty").querySelector("h2").textContent="No channels yet.";$("empty").querySelector("p").textContent="Create a text channel to start talking."}}
-function renderChannels(){let n=$("channels");n.innerHTML="";S.channels.forEach(c=>{let b=document.createElement("button");b.className="channel"+(S.channel?.id===c.id?" active":"");b.innerHTML="<span>#</span>"+esc(c.name);b.onclick=()=>selectChannel(c.id).catch(e=>toast(err(e)));n.append(b)})}
+async function selectServer(id){
+ S.server=S.servers.find(s=>s.id===id)||null;
+ S.channel=null;renderServers();applyServerPreferenceUI();
+ $("server-name").textContent=S.server?.name||"Pick a server";
+ if(!S.server)return;
+ const subtitle=$("server-subtitle");
+ if(subtitle)subtitle.textContent=currentServerPrefs(id).showServerDescriptions&&S.server.description?S.server.description:"YOUR COMMUNITY";
+ let {data,error}=await S.db.from("channels").select("id,server_id,name,created_at").eq("server_id",id).order("created_at");
+ if(error)throw error;
+ S.channels=data||[];renderChannels();applyServerPreferenceUI();
+ if(S.channels.length){
+  const prefs=currentServerPrefs(id);
+  let selectedChannel=null;
+  if(prefs.rememberChannel){
+   try{const last=localStorage.getItem("echo-last-channel:"+id);if(last&&S.channels.some(channel=>channel.id===last))selectedChannel=last;}catch{}
+  }
+  await selectChannel(selectedChannel||S.channels[0].id);
+ }else{
+  S.messages=[];renderMessages();
+  $("channel-name").textContent="No channels";$("channel-desc").textContent="Create a channel to start talking.";
+  $("message-input").disabled=true;$("send").disabled=true;
+  $("empty").classList.remove("hidden");$("empty").querySelector("h2").textContent="No channels yet.";
+  $("empty").querySelector("p").textContent="Create a text channel to start talking.";
+ }
+}
+function renderChannels(){
+ let n=$("channels");n.innerHTML="";
+ const heading=$("channel-section-title");
+ if(heading)heading.textContent=currentServerPrefs(S.server?.id).showChannelCounts?"TEXT CHANNELS · "+S.channels.length:"TEXT CHANNELS";
+ S.channels.forEach(c=>{
+  let b=document.createElement("button");b.className="channel"+(S.channel?.id===c.id?" active":"");
+  b.innerHTML="<span>#</span>"+esc(c.name);
+  b.onclick=()=>selectChannel(c.id).catch(e=>toast(err(e)));
+  n.append(b);
+ });
+}
 let channelRequestToken=0;
 async function selectChannel(id){
  const token=++channelRequestToken;
@@ -113,6 +147,10 @@ async function selectChannel(id){
  renderChannels();
  if(!S.channel){setLiveStatus("idle");return}
  const channel=S.channel;
+ const serverPreferences=currentServerPrefs(S.server?.id);
+ $("message-input").spellcheck=serverPreferences.spellcheck!==false;
+ if(serverPreferences.rememberChannel){try{localStorage.setItem("echo-last-channel:"+S.server.id,id)}catch{}}
+ applyServerPreferenceUI();
  setLiveStatus("connecting");
  $("channel-name").textContent=channel.name;
  $("channel-desc").textContent="Messages in #"+channel.name;
@@ -152,7 +190,7 @@ function renderMessages(){let root=$("messages");root.innerHTML="";$("empty").cl
 $("message-form").onsubmit=async e=>{e.preventDefault();let content=$("message-input").value.trim();if(!content||!S.channel)return;$("send").disabled=true;try{let channelId=S.channel.id;let {data:sent,error}=await S.db.from("messages").insert({channel_id:channelId,user_id:S.user.id,content}).select("id,channel_id,user_id,content,created_at,edited_at").single();if(error)throw error;if(S.channel?.id===channelId&&!S.messages.some(m=>m.id===sent.id)){S.messages.push(sent);if(S.messages.length>150)S.messages.shift();renderMessages()}$("message-input").value=""}catch(e){toast(err(e))}finally{$("send").disabled=!S.channel;$("message-input").focus()}};
 function openModal(mode){S.dialogMode=mode;let c={server:["Create a server","Give your space a name.","Server name","My server","Share the server with an invite link after creating it.","Create server"],channel:["Create a channel","Use a short channel name.","Channel name","general","Letters, numbers, hyphens and underscores work best.","Create channel"]}[mode];if(!c)return;$("modal-title").textContent=c[0];$("modal-desc").textContent=c[1];$("modal-label").textContent=c[2];$("modal-input").placeholder=c[3];$("modal-help").textContent=c[4];$("modal-submit").textContent=c[5];$("modal-input").value="";$("modal").showModal();$("modal-input").focus()}
 $("new-server").onclick=$("new-server-rail").onclick=()=>openModal("server");$("join").onclick=$("join-rail").onclick=openJoinServerPage;$("new-channel").onclick=()=>S.server?openModal("channel"):toast("Create or select a server first.");
-$("copy-id").onclick=async()=>{if(!S.server)return toast("Select a server first.");$("copy-id").disabled=true;try{const {data:code,error}=await S.db.rpc("create_server_invite",{p_server_id:S.server.id,p_expires_at:null,p_max_uses:null});if(error)throw error;const link=new URL(location.href);link.searchParams.set("invite",code);try{await navigator.clipboard.writeText(link.href);toast("Invite link copied!")}catch{toast("Invite code: "+code)}}catch(e){toast(err(e))}finally{$("copy-id").disabled=false}};
+$("copy-id").onclick=async()=>{if(!S.server)return toast("Select a server first.");const prefs=currentServerPrefs(S.server.id);if(prefs.confirmInvites&&!confirm("Create an invite link for "+S.server.name+"?"))return;$("copy-id").disabled=true;try{const {data:code,error}=await S.db.rpc("create_server_invite",{p_server_id:S.server.id,p_expires_at:null,p_max_uses:null});if(error)throw error;const link=new URL(location.href);link.searchParams.set("invite",code);if(prefs.copyInviteAutomatically){try{await navigator.clipboard.writeText(link.href);toast("Invite link copied!")}catch{toast("Invite link: "+link.href)}}else toast("Invite link: "+link.href)}catch(e){toast(err(e))}finally{$("copy-id").disabled=false}};
 $("cancel").onclick=()=>$("modal").close();$("modal-form").onsubmit=async e=>{e.preventDefault();let v=$("modal-input").value.trim(),mode=S.dialogMode;if(!v)return;$("modal-submit").disabled=true;try{if(mode==="server"){let {data:s,error}=await S.db.from("servers").insert({name:v.slice(0,60),owner_id:S.user.id}).select("id,name,owner_id,created_at,discoverable,description,category").single();if(error)throw error;let {error:me}=await S.db.from("server_members").insert({server_id:s.id,user_id:S.user.id,role:"owner"});if(me)throw me;let {error:ce}=await S.db.from("channels").insert({server_id:s.id,name:"general"});if(ce)throw ce;await loadServers();await selectServer(s.id);toast("Server created! Use Invite to share it with friends.")}else if(mode==="channel"){if(!S.server)throw Error("Select a server first.");let name=v.toLowerCase().replace(/[^a-z0-9_-]+/g,"-").replace(/^-+|-+$/g,"").slice(0,60);if(!name)throw Error("Use at least one letter or number.");let {error}=await S.db.from("channels").insert({server_id:S.server.id,name});if(error)throw error;await selectServer(S.server.id);toast("Channel created.")}$("modal").close()}catch(e){toast(err(e))}finally{$("modal-submit").disabled=false}};
 $("signout").onclick=async()=>{let prefs={};try{prefs=JSON.parse(localStorage.getItem("yapper-app-preferences-v1")||"{}")}catch{}if(prefs.confirmSignout!==false&&!confirm("Sign out of YAPPER on this device?"))return;let {error}=await S.db.auth.signOut();if(error)toast(err(error));showAuth()};
 
@@ -317,11 +355,46 @@ const SERVER_PREFS=[
  ["confirmInvites","Confirm before creating invite links"],["copyInviteAutomatically","Copy invite links automatically"],["showServerId","Show server ID in settings"],["confirmLeave","Confirm before leaving"],["warnBeforeDelete","Warn before destructive actions"],["showJoinDate","Show when I joined"],["showRoleLabels","Show member role labels"],["enableQuickSwitch","Enable quick server switching"],["rememberSearch","Remember server search"],["showWelcomeTips","Show server tips"]
  ]]
 ];
+const SERVER_PREF_DEFAULTS={
+ compactChannels:false,showChannelCounts:true,showServerDescriptions:true,highlightMentions:true,dimMutedChannels:false,
+ showMemberAvatars:true,showTimestamps:true,showEditedLabels:true,showLinkPreviews:true,reduceServerAnimations:false,
+ notifyMessages:true,notifyMentions:true,notifyReplies:true,notifyInvites:true,notificationSound:false,desktopAlerts:false,quietMode:false,muteWhenFocused:false,
+ hideOnlineStatus:false,hideActivity:false,filterUnknownLinks:true,blurSensitiveMedia:false,hideEmbeds:false,confirmExternalLinks:true,filterProfanity:false,limitDirectMessages:true,
+ enterToSend:true,ctrlEnterNewline:false,spellcheck:true,autoScroll:true,rememberChannel:true,showTyping:true,showReactions:true,showPinnedFirst:true,
+ confirmInvites:true,copyInviteAutomatically:true,showServerId:true,confirmLeave:true,warnBeforeDelete:true,showJoinDate:true,showRoleLabels:true,enableQuickSwitch:true,rememberSearch:true,showWelcomeTips:true
+};
 function serverPrefsKey(id){return "echo-server-preferences-v1:"+id}
 function readServerPrefs(id){try{return JSON.parse(localStorage.getItem(serverPrefsKey(id))||"{}")}catch{return {}}}
+function currentServerPrefs(id){
+ const saved=id?readServerPrefs(id):{};
+ const account=window.echoGetAppPrefs?.()||{};
+ return {...SERVER_PREF_DEFAULTS,...saved,enterToSend:typeof saved.enterToSend==="boolean"?saved.enterToSend:account.enterSend!==false};
+}
+window.echoGetServerPrefs=currentServerPrefs;
+window.echoGetServerPrefOverrides=readServerPrefs;
+function applyServerPreferenceUI(){
+ const prefs=currentServerPrefs(S.server?.id);
+ const root=document.documentElement;
+ root.classList.toggle("yapper-server-compact-channels",!!prefs.compactChannels);
+ root.classList.toggle("yapper-server-hide-member-avatars",!prefs.showMemberAvatars);
+ root.classList.toggle("yapper-server-hide-timestamps",!prefs.showTimestamps);
+ root.classList.toggle("yapper-server-hide-edited-labels",!prefs.showEditedLabels);
+ root.classList.toggle("yapper-server-hide-typing",!prefs.showTyping);
+ root.classList.toggle("yapper-server-hide-previews",!prefs.showLinkPreviews||!!prefs.hideEmbeds);
+ root.classList.toggle("yapper-server-blur-media",!!prefs.blurSensitiveMedia);
+ root.classList.toggle("yapper-server-reduced-motion",!!prefs.reduceServerAnimations);
+ root.classList.toggle("yapper-server-highlight-mentions",!!prefs.highlightMentions);
+ const subtitle=$("server-subtitle");
+ if(subtitle)subtitle.textContent=prefs.showServerDescriptions&&S.server?.description?S.server.description:"YOUR COMMUNITY";
+ const channelHeading=$("channel-section-title");
+ if(channelHeading)channelHeading.textContent=prefs.showChannelCounts?"TEXT CHANNELS · "+S.channels.length:"TEXT CHANNELS";
+ const input=$("message-input");
+ if(input)input.spellcheck=prefs.spellcheck!==false;
+}
 function renderServerPrefs(){
  const root=$("server-settings-groups");if(!root||!S.server)return;
- const prefs=readServerPrefs(S.server.id),query=($("server-settings-search").value||"").trim().toLowerCase();root.innerHTML="";
+ const prefs=currentServerPrefs(S.server.id),query=($("server-settings-search").value||"").trim().toLowerCase();
+ root.replaceChildren();
  SERVER_PREFS.forEach(([group,items])=>{
   const visible=items.filter(([key,label])=>(key+" "+label+" "+group).toLowerCase().includes(query));if(!visible.length)return;
   const section=document.createElement("div");section.className="server-pref-group";
@@ -329,21 +402,38 @@ function renderServerPrefs(){
   visible.forEach(([key,label])=>{
    const row=document.createElement("label");row.className="server-pref-row";
    const copy=document.createElement("span");copy.textContent=label;
-   const input=document.createElement("input");input.type="checkbox";input.checked=prefs[key]===true;input.dataset.pref=key;
-   input.addEventListener("change",()=>{const current=readServerPrefs(S.server.id);current[key]=input.checked;localStorage.setItem(serverPrefsKey(S.server.id),JSON.stringify(current));});
+   const input=document.createElement("input");input.type="checkbox";input.checked=!!prefs[key];input.dataset.pref=key;
+   input.addEventListener("change",async()=>{
+    if(key==="desktopAlerts"&&input.checked&&"Notification" in window&&Notification.permission!=="granted"){
+     try{
+      const permission=Notification.permission==="default"?await Notification.requestPermission():Notification.permission;
+      if(permission!=="granted"){input.checked=false;toast("Allow notifications in Chrome site settings to use desktop alerts.");}
+     }catch{input.checked=false;toast("Could not request browser notification permission.");}
+    }
+    const current=readServerPrefs(S.server.id);current[key]=input.checked;
+    try{
+     localStorage.setItem(serverPrefsKey(S.server.id),JSON.stringify(current));
+     applyServerPreferenceUI();
+     const status=$("server-preferences-status");
+     if(status)status.textContent="Saved automatically on this device · "+new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
+    }catch(error){toast("Could not save this preference: "+(error.message||error));}
+   });
    row.append(copy,input);section.append(row);
   });
   root.append(section);
  });
  if(!root.children.length){const empty=document.createElement("p");empty.className="muted";empty.textContent="No matching settings.";root.append(empty)}
+ applyServerPreferenceUI();
 }
 $("server-settings-search").addEventListener("input",renderServerPrefs);
 $("server-settings-reset").onclick=()=>{
  if(!S.server)return;
- if(!confirm("Reset all 40 personal preferences for this server?"))return;
- localStorage.removeItem(serverPrefsKey(S.server.id));renderServerPrefs();toast("Server preferences reset.");
+ if(!confirm("Reset all 44 personal preferences for this server?"))return;
+ localStorage.removeItem(serverPrefsKey(S.server.id));
+ renderServerPrefs();
+ const status=$("server-preferences-status");if(status)status.textContent="All 44 preferences reset to their defaults.";
+ toast("Server preferences reset.");
 };
-
 function openServerSettings(){
  if(!S.server)return toast("Select a server first.");
  const owner=S.server.owner_id===S.user.id;
@@ -363,7 +453,13 @@ function openServerSettings(){
  $("server-leave-button").disabled=owner;
  $("server-leave-help").textContent=owner?"The server owner cannot leave their own server yet.":"Leave this community. You can rejoin later with an invite.";
  $("server-settings-feedback").textContent="";
- $("server-settings-search").value="";renderServerPrefs();
+ $("server-settings-search").value="";
+ const serverPrefs=currentServerPrefs(S.server.id);
+ $("server-id-info").textContent=serverPrefs.showServerId?"Server ID: "+S.server.id:"";
+ $("server-id-info").classList.toggle("hidden",!serverPrefs.showServerId);
+ const preferenceStatus=$("server-preferences-status");
+ if(preferenceStatus)preferenceStatus.textContent="Changes save automatically on this device.";
+ renderServerPrefs();
  $("server-settings-modal").showModal();
 }
 $("server-settings-open").onclick=openServerSettings;
@@ -405,20 +501,23 @@ $("server-settings-form").onsubmit=async e=>{
 };
 $("server-settings-invite").onclick=async()=>{
  if(!S.server)return;
+ const serverPreferences=currentServerPrefs(S.server.id);
+ if(serverPreferences.confirmInvites&&!confirm("Create an invite link for "+S.server.name+"?"))return;
  const button=$("server-settings-invite");button.disabled=true;
  try{
   const {data:code,error}=await S.db.rpc("create_server_invite",{p_server_id:S.server.id,p_expires_at:null,p_max_uses:null});
   if(error)throw error;
   const link=new URL(location.href);link.searchParams.set("invite",code);
-  try{await navigator.clipboard.writeText(link.href);$("server-settings-feedback").textContent="Invite link copied to clipboard."}
-  catch{$("server-settings-feedback").textContent="Invite code: "+code}
+  if(serverPreferences.copyInviteAutomatically){try{await navigator.clipboard.writeText(link.href);$("server-settings-feedback").textContent="Invite link copied to clipboard."}
+  catch{$("server-settings-feedback").textContent="Invite link: "+link.href}}
+ else $("server-settings-feedback").textContent="Invite link: "+link.href;
  }catch(error){$("server-settings-feedback").textContent=err(error)}
  finally{button.disabled=false}
 };
 $("server-leave-button").onclick=async()=>{
  if(!S.server||S.server.owner_id===S.user.id)return;
  const current=S.server;
- if(!confirm("Leave "+current.name+"? You will need a new invite to rejoin."))return;
+ if(currentServerPrefs(current.id).confirmLeave&&!confirm("Leave "+current.name+"? You will need a new invite to rejoin."))return;
  const button=$("server-leave-button");button.disabled=true;
  try{
   const {error}=await S.db.from("server_members").delete().eq("server_id",current.id).eq("user_id",S.user.id);
