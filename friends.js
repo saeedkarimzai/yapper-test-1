@@ -198,6 +198,8 @@
   $f("open-friends").addEventListener("click", openFriends);
   const homeButton = $f("home-nav");
   if (homeButton) homeButton.addEventListener("click", openFriends);
+  const logoHomeButton = $f("echo-home-logo");
+  if (logoHomeButton) logoHomeButton.addEventListener("click", openFriends);
   const appShell = $f("app");
   const mobileNavButton = $f("mobile-sidebar-toggle");
   const channelNav = $f("channels");
