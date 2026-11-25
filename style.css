@@ -569,3 +569,17 @@ footer .account-settings-nav:hover,footer #signout:hover{background:#35373c;colo
  .live{display:none}
  .message .avatar{width:34px;height:34px;min-width:34px}
 }
+
+.mobile-sidebar-toggle{display:none;flex:0 0 34px;width:34px;height:34px;place-items:center;border:0;border-radius:6px;background:transparent;color:#b5bac1;font-size:17px}
+.mobile-sidebar-toggle:hover{background:#3f4147;color:#fff}
+@media(max-width:700px){
+ .mobile-sidebar-toggle{display:grid}
+ .chat-head{justify-content:flex-start}
+ .chat-head>div:first-of-type{min-width:0;flex:1}
+ .app.mobile-channels-open .side{display:flex;position:absolute;z-index:40;left:64px;top:0;bottom:0;width:min(240px,calc(100vw - 64px));box-shadow:18px 0 38px #0009}
+ .app.mobile-channels-open:after{content:"";position:absolute;z-index:35;inset:0;background:#0007;pointer-events:none}
+ .app.mobile-channels-open .side{z-index:40}
+}
+@media(max-width:470px){
+ .app.mobile-channels-open .side{left:54px;width:min(240px,calc(100vw - 54px))}
+}
