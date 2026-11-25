@@ -253,6 +253,7 @@
   const mention=!!username&&(content.toLowerCase().includes("@"+username.toLowerCase())||content.toLowerCase().includes("@everyone"));
   if(serverPrefs.quietMode)return;
   if(serverPrefs.muteWhenFocused&&!document.hidden)return;
+  if(serverPrefs.mutedChannels?.includes(S.channel?.id))return;
   if(mention&&serverPrefs.notifyMentions===false)return;
   if(!mention&&serverPrefs.notifyMessages===false)return;
   if(message?.reply_to&&serverPrefs.notifyReplies===false)return;
