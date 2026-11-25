@@ -90,6 +90,7 @@
       username: S.profile.username,
       avatar_url: S.profile.avatar_url || null,
       hidden_server_ids: hiddenServerIdsFromPreferences(),
+      hide_online_status: window.echoGetAppPrefs?.().hideOnlineStatus === true,
       online_at: new Date().toISOString()
     }).catch(() => {});
   }
@@ -111,7 +112,8 @@
             ...current,
             username: p.username || current.username || "User",
             avatar_url: Object.prototype.hasOwnProperty.call(p, "avatar_url") ? p.avatar_url : (current.avatar_url || null),
-            hidden_server_ids: Array.isArray(p.hidden_server_ids) ? p.hidden_server_ids : (current.hidden_server_ids || [])
+            hidden_server_ids: Array.isArray(p.hidden_server_ids) ? p.hidden_server_ids : (current.hidden_server_ids || []),
+            hide_online_status: p.hide_online_status === true
           };
           S.profiles[p.user_id] = updated;
           const memberIndex = S.memberProfiles.findIndex(member => member.id === p.user_id);
@@ -166,7 +168,9 @@
     const serverPreferences = window.echoGetServerPrefs?.(S.server.id) || {};
     const isOnline = profile => S.onlineIds.has(profile.id) &&
       !(Array.isArray(profile.hidden_server_ids) && profile.hidden_server_ids.includes(S.server.id)) &&
-      !(profile.id === S.user?.id && serverPreferences.hideOnlineStatus);
+      !(profile.hide_online_status === true) &&
+      !(profile.id === S.user?.id && serverPreferences.hideOnlineStatus) &&
+      !(profile.id === S.user?.id && window.echoGetAppPrefs?.().hideOnlineStatus === true);
     const people = S.memberProfiles.slice().sort((a, b) =>
       Number(isOnline(b)) - Number(isOnline(a)) || a.username.localeCompare(b.username)
     );
