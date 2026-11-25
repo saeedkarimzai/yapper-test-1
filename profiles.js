@@ -81,13 +81,14 @@
           const updated = {
             ...current,
             username: p.username || current.username || "User",
-            avatar_url: p.avatar_url || current.avatar_url || null
+            avatar_url: Object.prototype.hasOwnProperty.call(p, "avatar_url") ? p.avatar_url : (current.avatar_url || null)
           };
           S.profiles[p.user_id] = updated;
           const memberIndex = S.memberProfiles.findIndex(member => member.id === p.user_id);
           if (memberIndex >= 0) S.memberProfiles[memberIndex] = { ...S.memberProfiles[memberIndex], ...updated };
         });
         renderMembers();
+        if (typeof window.renderMessages === "function") window.renderMessages();
       })
       .subscribe(async status => {
         if (status === "SUBSCRIBED") {
@@ -315,30 +316,57 @@
     };
   }
 
-  const editButton = document.getElementById("edit-profile");
+  let removeAvatarRequested = false;
+  const profileFile = document.getElementById("profile-file");
+  const profilePreview = document.getElementById("profile-preview");
+  const removeAvatarButton = document.getElementById("profile-remove-picture");
   if (editButton) editButton.addEventListener("click", () => {
     if (!S.profile) return toast("Your profile is still loading.");
+    removeAvatarRequested = false;
     document.getElementById("profile-username").value = S.profile.username;
-    document.getElementById("profile-file").value = "";
-    paintOwnProfile();
+    profileFile.value = "";
+    if (profilePreview) {
+      profilePreview.replaceChildren();
+      if (S.profile.avatar_url) {
+        const image = document.createElement("img");
+        image.src = S.profile.avatar_url;
+        image.alt = "Current profile picture";
+        profilePreview.append(image);
+      } else {
+        profilePreview.textContent = initial(S.profile.username);
+      }
+    }
     document.getElementById("profile-modal").showModal();
   });
 
+  if (removeAvatarButton) removeAvatarButton.addEventListener("click", () => {
+    removeAvatarRequested = true;
+    profileFile.value = "";
+    if (profilePreview) profilePreview.textContent = initial(document.getElementById("profile-username").value || S.profile?.username || "User");
+    toast("Profile picture will be removed when you save.");
+  });
+
   document.getElementById("profile-cancel").addEventListener("click", () => document.getElementById("profile-modal").close());
-  document.getElementById("profile-file").addEventListener("change", () => {
-    const file = document.getElementById("profile-file").files[0];
+  profileFile.addEventListener("change", () => {
+    const file = profileFile.files[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      toast("Avatar must be 2 MB or smaller.");
-      document.getElementById("profile-file").value = "";
+    removeAvatarRequested = false;
+    if (!["image/png", "image/jpeg", "image/webp", "image/gif"].includes(file.type)) {
+      toast("Use a PNG, JPG, WEBP, or GIF image.");
+      profileFile.value = "";
       return;
     }
-    const preview = document.getElementById("profile-preview");
-    preview.innerHTML = "";
+    if (file.size > 2 * 1024 * 1024) {
+      toast("Profile pictures must be 2 MB or smaller.");
+      profileFile.value = "";
+      return;
+    }
+    profilePreview.replaceChildren();
     const image = document.createElement("img");
     image.src = URL.createObjectURL(file);
-    image.alt = "Avatar preview";
-    preview.append(image);
+    image.alt = "New profile picture preview";
+    image.onload = () => URL.revokeObjectURL(image.src);
+    profilePreview.append(image);
   });
 
   document.getElementById("profile-form").addEventListener("submit", async event => {
@@ -349,7 +377,7 @@
     try {
       const username = document.getElementById("profile-username").value.trim().toLowerCase();
       if (!/^[a-z0-9_]{2,24}$/.test(username)) throw new Error("Username must be 2–24 letters, numbers, or underscores.");
-      let avatarUrl = S.profile.avatar_url || null;
+      let avatarUrl = removeAvatarRequested ? null : (S.profile.avatar_url || null);
       const file = document.getElementById("profile-file").files[0];
       if (file) {
         const ext = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" }[file.type];
@@ -363,6 +391,7 @@
       if (updated.error) throw updated.error;
       S.profile = updated.data;
       S.profiles[S.user.id] = updated.data;
+      removeAvatarRequested = false;
       paintOwnProfile();
       if (S.presence) await S.presence.track({ user_id: S.user.id, username, avatar_url: avatarUrl, online_at: new Date().toISOString() });
       await loadMembers();
