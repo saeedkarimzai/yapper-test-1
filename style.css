@@ -1392,3 +1392,14 @@ html[data-theme="light"] .server-pref-availability{color:#757d9d}
 .rail-social-button:hover{border-radius:16px;background:linear-gradient(135deg,#8960e8,#5b82ed);color:#fff;box-shadow:0 5px 18px #765cff55}
 .rail-social-button:focus-visible{outline:2px solid #bda7ff;outline-offset:3px}
 @media(max-width:620px){.rail-social-button{width:40px;height:40px;min-width:40px;font-size:19px}}
+
+/* Single 4x4-style app launcher keeps the rail compact */
+.rail-app-launcher{position:relative;flex:none;z-index:40}
+.rail-app-launcher .home-pill{font-size:27px;line-height:1}
+.rail-apps-menu{position:absolute;left:calc(100% + 12px);top:0;z-index:100;min-width:190px;padding:7px;display:grid;gap:4px;background:#202127;border:1px solid #41434d;border-radius:12px;box-shadow:0 14px 38px #0009}
+.rail-apps-menu.hidden{display:none}
+.rail-apps-menu button{display:flex;align-items:center;gap:11px;width:100%;border:0;border-radius:8px;padding:10px 12px;background:transparent;color:#e7e7ed;text-align:left;font-size:13px;font-weight:650;cursor:pointer}
+.rail-apps-menu button:hover{background:#765be833;color:#fff}
+.rail-apps-menu button span{width:23px;text-align:center;font-size:19px}
+html[data-theme="light"] .rail-apps-menu{background:#fff;border-color:#d8d4e8;box-shadow:0 14px 38px #3333}
+html[data-theme="light"] .rail-apps-menu button{color:#35354b}
