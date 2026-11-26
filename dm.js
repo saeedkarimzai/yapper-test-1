@@ -78,6 +78,7 @@
   }
   const openDmsButton=$d("open-dms");
   if(openDmsButton)openDmsButton.addEventListener("click",()=>{
+    $d("rail-apps-menu")?.classList.add("hidden");
     const modal=$d("dm-modal");
     if(!modal)return;
     if(!userId)return note("Sign in first to use DMs.",true);
