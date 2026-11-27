@@ -197,7 +197,7 @@
   }
   $f("open-friends").addEventListener("click", openFriends);
   const homeButton = $f("home-nav");
-  if (homeButton) homeButton.addEventListener("click", () => $f("rail-apps-menu")?.classList.toggle("hidden"));
+  if (homeButton) homeButton.addEventListener("click", openFriends);
   document.addEventListener("click", event => { if (!event.target.closest(".rail-app-launcher")) $f("rail-apps-menu")?.classList.add("hidden"); });
   $f("open-friends").addEventListener("click", () => $f("rail-apps-menu")?.classList.add("hidden"));
   const logoHomeButton = $f("echo-home-logo");
